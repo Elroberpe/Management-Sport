@@ -26,7 +26,7 @@ public class Empresa extends AuditableEntity {
     @Column(name = "nombre_comercial", nullable = false, length = 100)
     private String nombreComercial;
 
-    @Column(name = "razon_social", nullable = false, length = 100)
+    @Column(name = "razon_social", nullable = false, length = 100, unique = true)
     private String razonSocial;
 
     @Column(name = "logo_url", length = 255)
