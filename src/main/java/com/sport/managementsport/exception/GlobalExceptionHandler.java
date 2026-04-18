@@ -17,9 +17,10 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. Añadir un logger estático
+    //logger estático
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    //metodo constructor
     private ErrorResponseDTO buildErrorResponse(String message, HttpStatus status, String path, List<ValidationErrorDTO> validationErrors) {
         ErrorResponseDTO errorResponse = new ErrorResponseDTO(status.value(), status.getReasonPhrase(), message, path);
         errorResponse.setTraceId(UUID.randomUUID().toString());
