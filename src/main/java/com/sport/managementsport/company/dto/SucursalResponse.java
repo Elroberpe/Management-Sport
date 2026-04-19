@@ -9,13 +9,11 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmpresaResponse {
-
+public class SucursalResponse {
     private Integer id;
-    private String nombreComercial;
-    private String razonSocial;
-    private String logoUrl;
-    private String emailContacto;
-    private String telefonoPrincipal;
-
+    private Integer empresaId;
+    private String nombre;
+    private String direccion;
+    private String telefono;
+    private boolean activo;
 }

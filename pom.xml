@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <scope>runtime</scope>
+            <!-- Eliminamos el scope 'runtime' para ayudar al IDE a encontrar la DLL de autenticación -->
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

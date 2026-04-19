@@ -1,4 +1,22 @@
 -- =========================================================================
+-- SCRIPT DE REINICIO DE BASE DE DATOS PARA DESARROLLO
+-- Elimina las tablas existentes en orden inverso y las vuelve a crear.
+-- =========================================================================
+
+-- Eliminar tablas en orden inverso para evitar conflictos de llaves foráneas
+DROP TABLE IF EXISTS Pago;
+DROP TABLE IF EXISTS Reserva;
+DROP TABLE IF EXISTS Mantenimiento;
+DROP TABLE IF EXISTS evento_horario;
+DROP TABLE IF EXISTS Evento;
+DROP TABLE IF EXISTS Usuario;
+DROP TABLE IF EXISTS Cliente;
+DROP TABLE IF EXISTS Cancha;
+DROP TABLE IF EXISTS Sucursal;
+DROP TABLE IF EXISTS Empresa;
+GO
+
+-- =========================================================================
 -- 1. TABLAS NÚCLEO (CORE ENTITIES)
 -- =========================================================================
 
@@ -57,7 +75,8 @@ GO
 
 CREATE TABLE Usuario (
     usuario_id INT IDENTITY(1,1),
-    sucursal_id INT NOT NULL,
+    empresa_id INT NULL,
+    sucursal_id INT NULL,
     username VARCHAR(50) NOT NULL,
     nombre VARCHAR(150) NOT NULL,
     email VARCHAR(100) NOT NULL,
@@ -70,6 +89,7 @@ CREATE TABLE Usuario (
     updated_by VARCHAR(20),
 
     CONSTRAINT PK_Usuario PRIMARY KEY (usuario_id),
+    CONSTRAINT FK_Usuario_Empresa FOREIGN KEY (empresa_id) REFERENCES Empresa(empresa_id),
     CONSTRAINT FK_Usuario_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
     CONSTRAINT UQ_Usuario_Username UNIQUE (username),
     CONSTRAINT UQ_Usuario_Email UNIQUE (email),
@@ -173,6 +193,7 @@ CREATE TABLE Reserva (
     monto_pagado NUMERIC(10,2) CONSTRAINT DF_Reserva_MontoPagado DEFAULT 0.00,
     saldo_pendiente NUMERIC(10,2) NOT NULL,
     estado_reserva VARCHAR(20) NOT NULL CONSTRAINT DF_Reserva_Estado DEFAULT 'PENDIENTE',
+    motivo_cancelacion VARCHAR(250) NULL,
     created_at DATETIME CONSTRAINT DF_Reserva_CreatedAt DEFAULT GETDATE(),
     created_by VARCHAR(20),
     updated_at DATETIME,
@@ -199,6 +220,7 @@ CREATE TABLE Pago (
     tipo_transaccion VARCHAR(20) NOT NULL CONSTRAINT DF_Pago_TipoTx DEFAULT 'INGRESO',
     referencia VARCHAR(30),
     nota VARCHAR(250),
+    motivo_anulacion VARCHAR(250) NULL,
     created_at DATETIME CONSTRAINT DF_Pago_CreatedAt DEFAULT GETDATE(),
     created_by VARCHAR(20),
     updated_at DATETIME,
@@ -214,17 +236,4 @@ CREATE TABLE Pago (
     -- Constraint Inteligente: Valida que el dinero pertenezca a una Reserva o a un Evento
     CONSTRAINT CK_Pago_Origen CHECK (reserva_id IS NOT NULL OR evento_id IS NOT NULL)
 );
-GO
-
--- Paso 1: Agregar la columna empresa_id
-ALTER TABLE Usuario ADD empresa_id INT NULL;
-GO
-
--- Paso 2: Crear la llave foránea hacia Empresa
-ALTER TABLE Usuario ADD CONSTRAINT FK_Usuario_Empresa
-FOREIGN KEY (empresa_id) REFERENCES Empresa(empresa_id);
-GO
-
--- Paso 3: Permitir que sucursal_id sea NULL (Para que el SuperAdmin no esté atado a una sola)
-ALTER TABLE Usuario ALTER COLUMN sucursal_id INT NULL;
 GO
