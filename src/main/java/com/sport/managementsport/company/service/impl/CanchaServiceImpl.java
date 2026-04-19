@@ -13,6 +13,7 @@ import com.sport.managementsport.company.repository.SucursalRepository;
 import com.sport.managementsport.company.service.CanchaService;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +23,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CanchaServiceImpl implements CanchaService {
 
     private final CanchaRepository canchaRepository;
     private final SucursalRepository sucursalRepository;
-
-    public CanchaServiceImpl(CanchaRepository canchaRepository, SucursalRepository sucursalRepository) {
-        this.canchaRepository = canchaRepository;
-        this.sucursalRepository = sucursalRepository;
-    }
 
     @Override
     @Transactional
@@ -121,6 +118,11 @@ public class CanchaServiceImpl implements CanchaService {
     public Cancha findCanchaEntityById(Integer id) {
         return canchaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada con id: " + id));
+    }
+
+    @Override
+    public boolean canchaExists(Integer id) {
+        return canchaRepository.existsById(id);
     }
 
     private CanchaResponse toCanchaResponse(Cancha cancha) {

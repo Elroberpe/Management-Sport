@@ -19,7 +19,6 @@ public interface CanchaService {
     CanchaResponse updateEstadoCancha(Integer id, UpdateEstadoCanchaRequest request);
     void deleteCancha(Integer id);
     List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId);
-
-    // Método para uso interno entre servicios
     Cancha findCanchaEntityById(Integer id);
+    boolean canchaExists(Integer id);
 }
