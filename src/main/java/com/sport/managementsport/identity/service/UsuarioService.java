@@ -1,18 +1,27 @@
 package com.sport.managementsport.identity.service;
 
-import com.sport.managementsport.identity.domain.Usuario;
+import com.sport.managementsport.identity.dto.ChangePasswordRequest;
+import com.sport.managementsport.identity.dto.CreateUsuarioRequest;
+import com.sport.managementsport.identity.dto.UpdateUsuarioRequest;
+import com.sport.managementsport.identity.dto.UsuarioResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
-import java.util.Optional;
 
 public interface UsuarioService {
 
-    Usuario createUsuario(Usuario usuario);
+    UsuarioResponse createUsuario(CreateUsuarioRequest request);
 
-    Optional<Usuario> getUsuarioById(Integer id);
+    UsuarioResponse getUsuarioById(Integer id);
 
-    List<Usuario> getAllUsuarios();
+    Page<UsuarioResponse> getAllUsuarios(Pageable pageable);
 
-    Usuario updateUsuario(Integer id, Usuario usuarioDetails);
+    UsuarioResponse updateUsuario(Integer id, UpdateUsuarioRequest request);
+
+    void changePassword(Integer id, ChangePasswordRequest request);
 
     void deleteUsuario(Integer id);
+
+    List<UsuarioResponse> getUsuariosBySucursalId(Integer sucursalId);
 }

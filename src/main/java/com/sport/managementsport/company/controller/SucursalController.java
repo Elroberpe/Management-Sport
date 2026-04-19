@@ -6,6 +6,8 @@ import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
 import com.sport.managementsport.company.service.CanchaService;
 import com.sport.managementsport.company.service.SucursalService;
+import com.sport.managementsport.identity.dto.UsuarioResponse;
+import com.sport.managementsport.identity.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +21,12 @@ public class SucursalController {
 
     private final SucursalService sucursalService;
     private final CanchaService canchaService;
+    private final UsuarioService usuarioService;
 
-    public SucursalController(SucursalService sucursalService, CanchaService canchaService) {
+    public SucursalController(SucursalService sucursalService, CanchaService canchaService, UsuarioService usuarioService) {
         this.sucursalService = sucursalService;
         this.canchaService = canchaService;
+        this.usuarioService = usuarioService;
     }
 
     @PostMapping
@@ -74,5 +78,11 @@ public class SucursalController {
     public ResponseEntity<List<CanchaResponse>> getCanchasBySucursal(@PathVariable Integer sucursalId) {
         List<CanchaResponse> canchas = canchaService.getCanchasBySucursalId(sucursalId);
         return ResponseEntity.ok(canchas);
+    }
+
+    @GetMapping("/{sucursalId}/usuarios")
+    public ResponseEntity<List<UsuarioResponse>> getUsuariosBySucursal(@PathVariable Integer sucursalId) {
+        List<UsuarioResponse> usuarios = usuarioService.getUsuariosBySucursalId(sucursalId);
+        return ResponseEntity.ok(usuarios);
     }
 }
