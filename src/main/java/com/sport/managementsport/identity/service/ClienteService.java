@@ -1,18 +1,24 @@
 package com.sport.managementsport.identity.service;
 
-import com.sport.managementsport.identity.domain.Cliente;
-import java.util.List;
-import java.util.Optional;
+import com.sport.managementsport.identity.dto.ClienteResponse;
+import com.sport.managementsport.identity.dto.CreateClienteRequest;
+import com.sport.managementsport.identity.dto.UpdateClienteRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ClienteService {
 
-    Cliente createCliente(Cliente cliente);
+    ClienteResponse createCliente(CreateClienteRequest request);
 
-    Optional<Cliente> getClienteById(Integer id);
+    ClienteResponse getClienteById(Integer id);
 
-    List<Cliente> getAllClientes();
+    Page<ClienteResponse> getAllClientes(String documento, String nombre, Pageable pageable);
 
-    Cliente updateCliente(Integer id, Cliente clienteDetails);
+    ClienteResponse getClienteByDocumento(String documento);
+
+    Page<ClienteResponse> searchClientes(String query, Pageable pageable);
+
+    ClienteResponse updateCliente(Integer id, UpdateClienteRequest request);
 
     void deleteCliente(Integer id);
 }
