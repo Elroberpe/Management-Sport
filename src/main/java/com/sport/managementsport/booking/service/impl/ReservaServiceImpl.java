@@ -11,6 +11,7 @@ import com.sport.managementsport.common.enums.TipoReserva;
 import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.domain.Cancha;
 import com.sport.managementsport.company.service.CanchaService;
+import com.sport.managementsport.events.domain.Evento; // <-- EL IMPORT FALTANTE
 import com.sport.managementsport.events.domain.Mantenimiento;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
@@ -54,23 +55,11 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional
     public ReservaResponse createReserva(CreateReservaRequest request) {
-        LocalDateTime inicioReserva = request.getFecha().atTime(request.getHoraInicio());
-        LocalDateTime finReserva = request.getFecha().atTime(request.getHoraFin());
-
-        List<Mantenimiento> conflictingMantenimientos = mantenimientoService.findConflictingMantenimientos(request.getCanchaId(), inicioReserva, finReserva);
-        if (!conflictingMantenimientos.isEmpty()) {
-            throw new BusinessRuleException("El horario seleccionado no está disponible por un mantenimiento programado.");
-        }
-
-        List<Reserva> conflictingReservas = reservaRepository.findConflictingReservas(
-                request.getCanchaId(), request.getFecha(), request.getHoraInicio(), request.getHoraFin());
-        if (!conflictingReservas.isEmpty()) {
-            throw new BusinessRuleException("El horario seleccionado ya no está disponible.");
-        }
+        this.validateHorarioDisponible(request.getCanchaId(), request.getFecha(), request.getHoraInicio(), request.getHoraFin());
 
         Cancha cancha = canchaService.findCanchaEntityById(request.getCanchaId());
         Cliente cliente = clienteService.findClienteEntityById(request.getClienteId());
-        Usuario usuarioOperador = usuarioService.findUsuarioEntityById(1); // Solución temporal
+        Usuario usuarioOperador = usuarioService.findUsuarioEntityById(1);
         
         if (cancha.getEstadoCancha() != EstadoCancha.DISPONIBLE) {
             throw new BusinessRuleException("No se puede reservar. La cancha no está disponible (estado: " + cancha.getEstadoCancha() + ").");
@@ -206,26 +195,42 @@ public class ReservaServiceImpl implements ReservaService {
         }
 
         Cancha cancha = reservaOriginal.getCancha();
-        List<Reserva> conflictingReservas = reservaRepository.findConflictingReservas(
-                cancha.getCanchaId(), request.getNuevaFecha(), request.getNuevaHoraInicio(), request.getNuevaHoraFin());
-        conflictingReservas.removeIf(r -> r.getReservaId().equals(id));
-        if (!conflictingReservas.isEmpty()) {
-            throw new BusinessRuleException("El nuevo horario no está disponible.");
+        validateHorarioDisponible(cancha.getCanchaId(), request.getNuevaFecha(), request.getNuevaHoraInicio(), request.getNuevaHoraFin());
+
+        long newMinutes = Duration.between(request.getNuevaHoraInicio(), request.getNuevaHoraFin()).toMinutes();
+        BigDecimal newHours = BigDecimal.valueOf(newMinutes / 60.0);
+        BigDecimal nuevoMontoTotal = cancha.getPrecioHora().multiply(newHours);
+
+        Reserva nuevaReserva = new Reserva();
+        nuevaReserva.setCancha(cancha);
+        nuevaReserva.setCliente(reservaOriginal.getCliente());
+        nuevaReserva.setUsuario(reservaOriginal.getUsuario());
+        nuevaReserva.setFecha(request.getNuevaFecha());
+        nuevaReserva.setHoraInicio(request.getNuevaHoraInicio());
+        nuevaReserva.setHoraFin(request.getNuevaHoraFin());
+        nuevaReserva.setTipoReserva(TipoReserva.REGULAR);
+        
+        nuevaReserva.setMontoTotal(nuevoMontoTotal);
+        nuevaReserva.setMontoPagado(reservaOriginal.getMontoPagado());
+        nuevaReserva.setSaldoPendiente(nuevoMontoTotal.subtract(reservaOriginal.getMontoPagado()));
+
+        if (nuevaReserva.getSaldoPendiente().compareTo(BigDecimal.ZERO) <= 0) {
+            nuevaReserva.setEstadoReserva(EstadoReserva.PAGADA);
+        } else {
+            nuevaReserva.setEstadoReserva(EstadoReserva.PENDIENTE);
         }
         
+        Reserva savedNuevaReserva = reservaRepository.save(nuevaReserva);
+
+        pagoService.reasignarPagos(reservaOriginal, savedNuevaReserva);
+
         reservaOriginal.setEstadoReserva(EstadoReserva.CANCELADO);
-        reservaOriginal.setMotivoCancelacion("Reprogramada.");
+        reservaOriginal.setMotivoCancelacion("Reprogramada a reserva ID: " + savedNuevaReserva.getReservaId());
+        reservaOriginal.setMontoPagado(BigDecimal.ZERO);
+        reservaOriginal.setSaldoPendiente(reservaOriginal.getMontoTotal());
         reservaRepository.save(reservaOriginal);
 
-        CreateReservaRequest newRequest = new CreateReservaRequest(
-            cancha.getCanchaId(),
-            reservaOriginal.getCliente().getClienteId(),
-            request.getNuevaFecha(),
-            request.getNuevaHoraInicio(),
-            request.getNuevaHoraFin()
-        );
-        
-        return createReserva(newRequest);
+        return toReservaResponse(savedNuevaReserva);
     }
 
     @Override
@@ -271,6 +276,43 @@ public class ReservaServiceImpl implements ReservaService {
         }
         
         log.info("Tarea de actualización de estados de reservas finalizada.");
+    }
+
+    @Override
+    public void validateHorarioDisponible(Integer canchaId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        LocalDateTime inicio = fecha.atTime(horaInicio);
+        LocalDateTime fin = fecha.atTime(horaFin);
+
+        if (!mantenimientoService.findConflictingMantenimientos(canchaId, inicio, fin).isEmpty()) {
+            throw new BusinessRuleException("El horario para el evento se solapa con un mantenimiento.");
+        }
+        if (!reservaRepository.findConflictingReservas(canchaId, fecha, horaInicio, horaFin).isEmpty()) {
+            throw new BusinessRuleException("El horario para el evento se solapa con una reserva existente.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Evento evento) {
+        Cancha cancha = canchaService.findCanchaEntityById(canchaId);
+        Cliente cliente = clienteService.findClienteEntityById(clienteId);
+        Usuario usuario = usuarioService.findUsuarioEntityById(1);
+
+        Reserva reserva = new Reserva();
+        reserva.setCancha(cancha);
+        reserva.setCliente(cliente);
+        reserva.setUsuario(usuario);
+        reserva.setEvento(evento);
+        reserva.setTipoReserva(TipoReserva.EVENTO);
+        reserva.setFecha(fecha);
+        reserva.setHoraInicio(horaInicio);
+        reserva.setHoraFin(horaFin);
+        reserva.setMontoTotal(BigDecimal.ZERO);
+        reserva.setSaldoPendiente(BigDecimal.ZERO);
+        reserva.setMontoPagado(BigDecimal.ZERO);
+        reserva.setEstadoReserva(EstadoReserva.PAGADA);
+
+        return reservaRepository.save(reserva);
     }
 
     private ReservaResponse toReservaResponse(Reserva reserva) {

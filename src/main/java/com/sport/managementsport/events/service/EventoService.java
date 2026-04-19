@@ -1,18 +1,16 @@
 package com.sport.managementsport.events.service;
 
-import com.sport.managementsport.events.domain.Evento;
-import java.util.List;
-import java.util.Optional;
+import com.sport.managementsport.events.dto.CancelEventoRequest;
+import com.sport.managementsport.events.dto.CreateEventoRequest;
+import com.sport.managementsport.events.dto.EventoResponse;
+import com.sport.managementsport.events.dto.UpdateEventoRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface EventoService {
-
-    Evento createEvento(Evento evento);
-
-    Optional<Evento> getEventoById(Integer id);
-
-    List<Evento> getAllEventos();
-
-    Evento updateEvento(Integer id, Evento eventoDetails);
-
-    void deleteEvento(Integer id);
+    EventoResponse createEvento(CreateEventoRequest request);
+    EventoResponse getEventoById(Integer id);
+    Page<EventoResponse> getAllEventos(Pageable pageable);
+    EventoResponse updateEvento(Integer id, UpdateEventoRequest request);
+    EventoResponse cancelarEvento(Integer id, CancelEventoRequest request);
 }

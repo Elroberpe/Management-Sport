@@ -1,5 +1,6 @@
 package com.sport.managementsport.events.domain;
 
+import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.common.domain.AuditableEntity;
 import com.sport.managementsport.common.enums.EstadoEvento;
 import com.sport.managementsport.common.enums.TipoEvento;
@@ -37,10 +38,13 @@ public class Evento extends AuditableEntity {
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reserva> reservas = new ArrayList<>();
+
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)") // Para mapear VARCHAR(MAX) en SQL Server
+    @Column(columnDefinition = "VARCHAR(MAX)")
     private String descripcion;
 
     @Enumerated(EnumType.STRING)
@@ -57,9 +61,6 @@ public class Evento extends AuditableEntity {
     private LocalDate fechaFin;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", nullable = false, length = 20)
+    @Column(nullable = false, length = 20)
     private EstadoEvento estado = EstadoEvento.PROGRAMADO;
-
-    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<EventoHorario> horarios = new ArrayList<>();
 }

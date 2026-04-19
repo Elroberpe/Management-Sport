@@ -1,59 +1,49 @@
 package com.sport.managementsport.events.controller;
 
-import com.sport.managementsport.events.domain.Evento;
+import com.sport.managementsport.events.dto.CancelEventoRequest;
+import com.sport.managementsport.events.dto.CreateEventoRequest;
+import com.sport.managementsport.events.dto.EventoResponse;
+import com.sport.managementsport.events.dto.UpdateEventoRequest;
 import com.sport.managementsport.events.service.EventoService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/eventos")
+@RequiredArgsConstructor
 public class EventoController {
 
     private final EventoService eventoService;
 
-    public EventoController(EventoService eventoService) {
-        this.eventoService = eventoService;
-    }
-
     @PostMapping
-    public ResponseEntity<Evento> createEvento(@RequestBody Evento evento) {
-        Evento newEvento = eventoService.createEvento(evento);
-        return new ResponseEntity<>(newEvento, HttpStatus.CREATED);
+    public ResponseEntity<EventoResponse> createEvento(@Valid @RequestBody CreateEventoRequest request) {
+        EventoResponse nuevoEvento = eventoService.createEvento(request);
+        return new ResponseEntity<>(nuevoEvento, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Evento> getEventoById(@PathVariable Integer id) {
-        return eventoService.getEventoById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<EventoResponse> getEventoById(@PathVariable Integer id) {
+        return ResponseEntity.ok(eventoService.getEventoById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Evento>> getAllEventos() {
-        List<Evento> eventos = eventoService.getAllEventos();
-        return ResponseEntity.ok(eventos);
+    public ResponseEntity<Page<EventoResponse>> getAllEventos(@PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(eventoService.getAllEventos(pageable));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Evento> updateEvento(@PathVariable Integer id, @RequestBody Evento eventoDetails) {
-        try {
-            Evento updatedEvento = eventoService.updateEvento(id, eventoDetails);
-            return ResponseEntity.ok(updatedEvento);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<EventoResponse> updateEvento(@PathVariable Integer id, @Valid @RequestBody UpdateEventoRequest request) {
+        return ResponseEntity.ok(eventoService.updateEvento(id, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEvento(@PathVariable Integer id) {
-        try {
-            eventoService.deleteEvento(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @PatchMapping("/{id}/cancelar")
+    public ResponseEntity<EventoResponse> cancelarEvento(@PathVariable Integer id, @Valid @RequestBody CancelEventoRequest request) {
+        return ResponseEntity.ok(eventoService.cancelarEvento(id, request));
     }
 }

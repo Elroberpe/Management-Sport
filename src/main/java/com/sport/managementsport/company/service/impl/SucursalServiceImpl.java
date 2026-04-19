@@ -12,6 +12,7 @@ import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,17 +21,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SucursalServiceImpl implements SucursalService {
 
     private final SucursalRepository sucursalRepository;
     private final EmpresaRepository empresaRepository;
     private final CanchaRepository canchaRepository;
-
-    public SucursalServiceImpl(SucursalRepository sucursalRepository, EmpresaRepository empresaRepository, CanchaRepository canchaRepository) {
-        this.sucursalRepository = sucursalRepository;
-        this.empresaRepository = empresaRepository;
-        this.canchaRepository = canchaRepository;
-    }
 
     @Override
     @Transactional
@@ -142,7 +138,12 @@ public class SucursalServiceImpl implements SucursalService {
         return toSucursalResponse(savedSucursal);
     }
 
-    // --- Mapper Method ---
+    @Override
+    public Sucursal findSucursalEntityById(Integer id) {
+        return sucursalRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
+    }
+
     private SucursalResponse toSucursalResponse(Sucursal sucursal) {
         return new SucursalResponse(
                 sucursal.getSucursalId(),
