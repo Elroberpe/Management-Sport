@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CanchaRepository extends JpaRepository<Cancha, Integer> {
+    boolean existsBySucursalSucursalId(Integer sucursalId);
 }

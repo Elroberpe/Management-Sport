@@ -2,6 +2,7 @@ package com.sport.managementsport.company.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +26,7 @@ public class CreateSucursalRequest {
     @Size(max = 250, message = "La dirección no puede exceder los 250 caracteres")
     private String direccion;
 
-    @Size(max = 12, message = "El teléfono no puede exceder los 12 caracteres")
+    // Opcional, pero si se envía, debe cumplir el patrón
+    @Pattern(regexp = "^[0-9]{0,12}$", message = "El teléfono debe contener solo números y tener un máximo de 12 dígitos")
     private String telefono;
 }

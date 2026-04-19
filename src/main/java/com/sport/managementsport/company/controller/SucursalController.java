@@ -2,6 +2,7 @@ package com.sport.managementsport.company.controller;
 
 import com.sport.managementsport.company.dto.CreateSucursalRequest;
 import com.sport.managementsport.company.dto.SucursalResponse;
+import com.sport.managementsport.company.dto.UpdateSucursalRequest;
 import com.sport.managementsport.company.service.SucursalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,18 +40,27 @@ public class SucursalController {
         return ResponseEntity.ok(sucursales);
     }
 
-    /*
-    // Dejamos el update comentado hasta que creemos el UpdateSucursalRequest
     @PutMapping("/{id}")
     public ResponseEntity<SucursalResponse> updateSucursal(@PathVariable Integer id, @Valid @RequestBody UpdateSucursalRequest request) {
         SucursalResponse updatedSucursal = sucursalService.updateSucursal(id, request);
         return ResponseEntity.ok(updatedSucursal);
     }
-    */
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSucursal(@PathVariable Integer id) {
         sucursalService.deleteSucursal(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<SucursalResponse> activarSucursal(@PathVariable Integer id) {
+        SucursalResponse sucursal = sucursalService.activarSucursal(id);
+        return ResponseEntity.ok(sucursal);
+    }
+
+    @PatchMapping("/{id}/desactivar")
+    public ResponseEntity<SucursalResponse> desactivarSucursal(@PathVariable Integer id) {
+        SucursalResponse sucursal = sucursalService.desactivarSucursal(id);
+        return ResponseEntity.ok(sucursal);
     }
 }
