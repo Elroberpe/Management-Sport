@@ -18,7 +18,9 @@ import com.sport.managementsport.exception.ResourceNotFoundException;
 import com.sport.managementsport.finance.dto.CreatePagoRequest;
 import com.sport.managementsport.finance.service.PagoService;
 import com.sport.managementsport.identity.domain.Cliente;
+import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.service.ClienteService;
+import com.sport.managementsport.identity.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,7 @@ public class ReservaServiceImpl implements ReservaService {
     private final ClienteService clienteService;
     private final MantenimientoService mantenimientoService;
     private final PagoService pagoService;
+    private final UsuarioService usuarioService;
 
     @Override
     @Transactional
@@ -67,6 +70,7 @@ public class ReservaServiceImpl implements ReservaService {
 
         Cancha cancha = canchaService.findCanchaEntityById(request.getCanchaId());
         Cliente cliente = clienteService.findClienteEntityById(request.getClienteId());
+        Usuario usuarioOperador = usuarioService.findUsuarioEntityById(1); // Solución temporal
         
         if (cancha.getEstadoCancha() != EstadoCancha.DISPONIBLE) {
             throw new BusinessRuleException("No se puede reservar. La cancha no está disponible (estado: " + cancha.getEstadoCancha() + ").");
@@ -79,6 +83,7 @@ public class ReservaServiceImpl implements ReservaService {
         Reserva reserva = new Reserva();
         reserva.setCancha(cancha);
         reserva.setCliente(cliente);
+        reserva.setUsuario(usuarioOperador);
         reserva.setFecha(request.getFecha());
         reserva.setHoraInicio(request.getHoraInicio());
         reserva.setHoraFin(request.getHoraFin());

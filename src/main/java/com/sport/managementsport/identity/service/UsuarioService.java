@@ -1,5 +1,6 @@
 package com.sport.managementsport.identity.service;
 
+import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.dto.ChangePasswordRequest;
 import com.sport.managementsport.identity.dto.CreateUsuarioRequest;
 import com.sport.managementsport.identity.dto.UpdateUsuarioRequest;
@@ -12,16 +13,13 @@ import java.util.List;
 public interface UsuarioService {
 
     UsuarioResponse createUsuario(CreateUsuarioRequest request);
-
     UsuarioResponse getUsuarioById(Integer id);
-
     Page<UsuarioResponse> getAllUsuarios(Pageable pageable);
-
     UsuarioResponse updateUsuario(Integer id, UpdateUsuarioRequest request);
-
     void changePassword(Integer id, ChangePasswordRequest request);
-
     void deleteUsuario(Integer id);
-
     List<UsuarioResponse> getUsuariosBySucursalId(Integer sucursalId);
+
+    // Método para uso interno
+    Usuario findUsuarioEntityById(Integer id);
 }

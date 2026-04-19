@@ -15,6 +15,7 @@ import com.sport.managementsport.identity.service.UsuarioService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
@@ -33,17 +35,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final SucursalRepository sucursalRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, EmpresaRepository empresaRepository, SucursalRepository sucursalRepository, PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.empresaRepository = empresaRepository;
-        this.sucursalRepository = sucursalRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-
     @Override
     @Transactional
     public UsuarioResponse createUsuario(CreateUsuarioRequest request) {
-        // Lógica de validación reutilizada
         validateUsernameUniqueness(request.getUsername(), null);
         validateEmailUniqueness(request.getEmail(), null);
 
@@ -145,7 +139,12 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .collect(Collectors.toList());
     }
 
-    // --- Métodos de Validación Privados ---
+    @Override
+    @Transactional(readOnly = true)
+    public Usuario findUsuarioEntityById(Integer id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+    }
 
     private void validateUsernameUniqueness(String username, Integer userIdToIgnore) {
         Optional<Usuario> existingUser = usuarioRepository.findByUsername(username);
@@ -160,8 +159,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new DuplicateResourceException("El email '" + email + "' ya está en uso.");
         }
     }
-
-    // --- Mapper ---
 
     private UsuarioResponse toUsuarioResponse(Usuario usuario) {
         return new UsuarioResponse(
