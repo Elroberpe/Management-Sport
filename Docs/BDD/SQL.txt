@@ -56,6 +56,7 @@ GO
 CREATE TABLE Cancha (
     cancha_id INT IDENTITY(1,1),
     sucursal_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
     estado_cancha VARCHAR(20) NOT NULL CONSTRAINT DF_Cancha_Estado DEFAULT 'DISPONIBLE',
     precio_hora NUMERIC(10,2) NOT NULL,
     created_at DATETIME CONSTRAINT DF_Cancha_CreatedAt DEFAULT GETDATE(),

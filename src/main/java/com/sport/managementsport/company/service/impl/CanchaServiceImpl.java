@@ -1,61 +1,128 @@
 package com.sport.managementsport.company.service.impl;
 
+import com.sport.managementsport.common.enums.EstadoCancha;
 import com.sport.managementsport.company.domain.Cancha;
+import com.sport.managementsport.company.domain.Sucursal;
+import com.sport.managementsport.company.dto.CanchaResponse;
+import com.sport.managementsport.company.dto.CreateCanchaRequest;
+import com.sport.managementsport.company.dto.UpdateCanchaRequest;
+import com.sport.managementsport.company.dto.UpdateEstadoCanchaRequest;
 import com.sport.managementsport.company.repository.CanchaRepository;
+import com.sport.managementsport.company.repository.CanchaSpecification;
+import com.sport.managementsport.company.repository.SucursalRepository;
 import com.sport.managementsport.company.service.CanchaService;
+import com.sport.managementsport.exception.DuplicateResourceException;
+import com.sport.managementsport.exception.ResourceNotFoundException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CanchaServiceImpl implements CanchaService {
 
     private final CanchaRepository canchaRepository;
+    private final SucursalRepository sucursalRepository;
 
-    public CanchaServiceImpl(CanchaRepository canchaRepository) {
+    public CanchaServiceImpl(CanchaRepository canchaRepository, SucursalRepository sucursalRepository) {
         this.canchaRepository = canchaRepository;
+        this.sucursalRepository = sucursalRepository;
     }
 
     @Override
     @Transactional
-    public Cancha createCancha(Cancha cancha) {
-        // Aquí se podrían añadir validaciones, como verificar que la sucursal exista
-        return canchaRepository.save(cancha);
+    public CanchaResponse createCancha(CreateCanchaRequest request) {
+        Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
+                .orElseThrow(() -> new ResourceNotFoundException("No se puede crear la cancha. Sucursal no encontrada con id: " + request.getSucursalId()));
+
+        if (canchaRepository.existsByNombreAndSucursalSucursalId(request.getNombre(), request.getSucursalId())) {
+            throw new DuplicateResourceException("Ya existe una cancha con el nombre '" + request.getNombre() + "' en esta sucursal.");
+        }
+
+        Cancha cancha = new Cancha();
+        cancha.setSucursal(sucursal);
+        cancha.setNombre(request.getNombre());
+        cancha.setPrecioHora(request.getPrecioHora());
+
+        Cancha savedCancha = canchaRepository.save(cancha);
+        return toCanchaResponse(savedCancha);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Cancha> getCanchaById(Integer id) {
-        return canchaRepository.findById(id);
+    public Optional<CanchaResponse> getCanchaById(Integer id) {
+        return canchaRepository.findById(id).map(this::toCanchaResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cancha> getAllCanchas() {
-        return canchaRepository.findAll();
+    public List<CanchaResponse> getAllCanchas(Integer sucursalId, EstadoCancha estado) {
+        Specification<Cancha> spec = Specification.where(CanchaSpecification.sucursalIdEquals(sucursalId))
+                                                  .and(CanchaSpecification.estadoEquals(estado));
+        
+        return canchaRepository.findAll(spec).stream()
+                .map(this::toCanchaResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public Cancha updateCancha(Integer id, Cancha canchaDetails) {
+    public CanchaResponse updateCancha(Integer id, UpdateCanchaRequest request) {
         Cancha cancha = canchaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cancha no encontrada con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada con id: " + id));
 
-        cancha.setEstadoCancha(canchaDetails.getEstadoCancha());
-        cancha.setPrecioHora(canchaDetails.getPrecioHora());
-        // La sucursal (sucursal_id) no debería cambiarse en una actualización simple
+        if (request.getNombre() != null) {
+            cancha.setNombre(request.getNombre());
+        }
+        if (request.getPrecioHora() != null) {
+            cancha.setPrecioHora(request.getPrecioHora());
+        }
 
-        return canchaRepository.save(cancha);
+        Cancha updatedCancha = canchaRepository.save(cancha);
+        return toCanchaResponse(updatedCancha);
+    }
+
+    @Override
+    @Transactional
+    public CanchaResponse updateEstadoCancha(Integer id, UpdateEstadoCanchaRequest request) {
+        Cancha cancha = canchaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada con id: " + id));
+        
+        cancha.setEstadoCancha(request.getEstadoCancha());
+        Cancha updatedCancha = canchaRepository.save(cancha);
+        return toCanchaResponse(updatedCancha);
     }
 
     @Override
     @Transactional
     public void deleteCancha(Integer id) {
         if (!canchaRepository.existsById(id)) {
-            throw new RuntimeException("Cancha no encontrada con id: " + id);
+            throw new ResourceNotFoundException("Cancha no encontrada con id: " + id);
         }
         canchaRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId) {
+        if (!sucursalRepository.existsById(sucursalId)) {
+            throw new ResourceNotFoundException("Sucursal no encontrada con id: " + sucursalId);
+        }
+        return canchaRepository.findBySucursalSucursalId(sucursalId).stream()
+                .map(this::toCanchaResponse)
+                .collect(Collectors.toList());
+    }
+
+    private CanchaResponse toCanchaResponse(Cancha cancha) {
+        return new CanchaResponse(
+                cancha.getCanchaId(),
+                cancha.getSucursal().getSucursalId(),
+                cancha.getNombre(),
+                cancha.getEstadoCancha(),
+                cancha.getPrecioHora()
+        );
     }
 }

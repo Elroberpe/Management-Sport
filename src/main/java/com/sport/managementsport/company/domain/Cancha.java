@@ -1,6 +1,7 @@
 package com.sport.managementsport.company.domain;
 
 import com.sport.managementsport.common.domain.AuditableEntity;
+import com.sport.managementsport.common.enums.EstadoCancha;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,8 +27,12 @@ public class Cancha extends AuditableEntity {
     @JoinColumn(name = "sucursal_id", nullable = false)
     private Sucursal sucursal;
 
+    @Column(nullable = false, length = 100)
+    private String nombre;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "estado_cancha", nullable = false, length = 20)
-    private String estadoCancha = "DISPONIBLE";
+    private EstadoCancha estadoCancha = EstadoCancha.DISPONIBLE;
 
     @Column(name = "precio_hora", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioHora;

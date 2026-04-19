@@ -1,8 +1,10 @@
 package com.sport.managementsport.company.controller;
 
+import com.sport.managementsport.company.dto.CanchaResponse;
 import com.sport.managementsport.company.dto.CreateSucursalRequest;
 import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
+import com.sport.managementsport.company.service.CanchaService;
 import com.sport.managementsport.company.service.SucursalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -16,9 +18,11 @@ import java.util.List;
 public class SucursalController {
 
     private final SucursalService sucursalService;
+    private final CanchaService canchaService;
 
-    public SucursalController(SucursalService sucursalService) {
+    public SucursalController(SucursalService sucursalService, CanchaService canchaService) {
         this.sucursalService = sucursalService;
+        this.canchaService = canchaService;
     }
 
     @PostMapping
@@ -62,5 +66,13 @@ public class SucursalController {
     public ResponseEntity<SucursalResponse> desactivarSucursal(@PathVariable Integer id) {
         SucursalResponse sucursal = sucursalService.desactivarSucursal(id);
         return ResponseEntity.ok(sucursal);
+    }
+
+    // --- Endpoints Anidados ---
+
+    @GetMapping("/{sucursalId}/canchas")
+    public ResponseEntity<List<CanchaResponse>> getCanchasBySucursal(@PathVariable Integer sucursalId) {
+        List<CanchaResponse> canchas = canchaService.getCanchasBySucursalId(sucursalId);
+        return ResponseEntity.ok(canchas);
     }
 }
