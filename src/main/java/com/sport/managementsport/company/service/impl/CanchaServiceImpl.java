@@ -116,6 +116,13 @@ public class CanchaServiceImpl implements CanchaService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Cancha findCanchaEntityById(Integer id) {
+        return canchaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada con id: " + id));
+    }
+
     private CanchaResponse toCanchaResponse(Cancha cancha) {
         return new CanchaResponse(
                 cancha.getCanchaId(),

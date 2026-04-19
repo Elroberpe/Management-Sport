@@ -1,18 +1,10 @@
 package com.sport.managementsport.events.service;
 
 import com.sport.managementsport.events.domain.Mantenimiento;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public interface MantenimientoService {
-
-    Mantenimiento createMantenimiento(Mantenimiento mantenimiento);
-
-    Optional<Mantenimiento> getMantenimientoById(Integer id);
-
-    List<Mantenimiento> getAllMantenimientos();
-
-    Mantenimiento updateMantenimiento(Integer id, Mantenimiento mantenimientoDetails);
-
-    void deleteMantenimiento(Integer id);
+    // Este método es para uso interno entre servicios
+    List<Mantenimiento> findConflictingMantenimientos(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin);
 }

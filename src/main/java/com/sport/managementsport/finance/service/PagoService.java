@@ -1,18 +1,11 @@
 package com.sport.managementsport.finance.service;
 
-import com.sport.managementsport.finance.domain.Pago;
+import com.sport.managementsport.finance.dto.CreatePagoRequest;
+import com.sport.managementsport.finance.dto.PagoResponse;
+
 import java.util.List;
-import java.util.Optional;
 
 public interface PagoService {
-
-    Pago createPago(Pago pago);
-
-    Optional<Pago> getPagoById(Integer id);
-
-    List<Pago> getAllPagos();
-
-    Pago updatePago(Integer id, Pago pagoDetails);
-
-    void deletePago(Integer id);
+    PagoResponse createPago(CreatePagoRequest request);
+    List<PagoResponse> getPagosByReservaId(Integer reservaId);
 }

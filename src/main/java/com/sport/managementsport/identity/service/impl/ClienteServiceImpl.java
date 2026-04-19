@@ -103,6 +103,13 @@ public class ClienteServiceImpl implements ClienteService {
         clienteRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Cliente findClienteEntityById(Integer id) {
+        return clienteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con id: " + id));
+    }
+
     private ClienteResponse toClienteResponse(Cliente cliente) {
         return new ClienteResponse(
                 cliente.getClienteId(),

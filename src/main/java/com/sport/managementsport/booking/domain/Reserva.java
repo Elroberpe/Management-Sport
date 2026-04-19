@@ -5,6 +5,7 @@ import com.sport.managementsport.common.enums.EstadoReserva;
 import com.sport.managementsport.common.enums.TipoReserva;
 import com.sport.managementsport.company.domain.Cancha;
 import com.sport.managementsport.events.domain.Evento;
+import com.sport.managementsport.finance.domain.Pago;
 import com.sport.managementsport.identity.domain.Cliente;
 import com.sport.managementsport.identity.domain.Usuario;
 import jakarta.persistence.*;
@@ -16,6 +17,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "Reserva")
@@ -45,6 +48,9 @@ public class Reserva extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evento_id")
     private Evento evento;
+
+    @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pago> pagos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_reserva", nullable = false, length = 20)
