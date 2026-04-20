@@ -9,8 +9,8 @@ import com.sport.managementsport.company.dto.UpdateCanchaRequest;
 import com.sport.managementsport.company.dto.UpdateEstadoCanchaRequest;
 import com.sport.managementsport.company.repository.CanchaRepository;
 import com.sport.managementsport.company.repository.CanchaSpecification;
-import com.sport.managementsport.company.repository.SucursalRepository;
 import com.sport.managementsport.company.service.CanchaService;
+import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +27,12 @@ import java.util.stream.Collectors;
 public class CanchaServiceImpl implements CanchaService {
 
     private final CanchaRepository canchaRepository;
-    private final SucursalRepository sucursalRepository;
+    private final SucursalService sucursalService;
 
     @Override
     @Transactional
     public CanchaResponse createCancha(CreateCanchaRequest request) {
-        Sucursal sucursal = sucursalRepository.findById(request.getSucursalId())
-                .orElseThrow(() -> new ResourceNotFoundException("No se puede crear la cancha. Sucursal no encontrada con id: " + request.getSucursalId()));
+        Sucursal sucursal = sucursalService.findSucursalEntityById(request.getSucursalId());
 
         if (canchaRepository.existsByNombreAndSucursalSucursalId(request.getNombre(), request.getSucursalId())) {
             throw new DuplicateResourceException("Ya existe una cancha con el nombre '" + request.getNombre() + "' en esta sucursal.");
@@ -105,7 +104,7 @@ public class CanchaServiceImpl implements CanchaService {
     @Override
     @Transactional(readOnly = true)
     public List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId) {
-        if (!sucursalRepository.existsById(sucursalId)) {
+        if (!sucursalService.sucursalExists(sucursalId)) {
             throw new ResourceNotFoundException("Sucursal no encontrada con id: " + sucursalId);
         }
         return canchaRepository.findBySucursalSucursalId(sucursalId).stream()
@@ -123,6 +122,11 @@ public class CanchaServiceImpl implements CanchaService {
     @Override
     public boolean canchaExists(Integer id) {
         return canchaRepository.existsById(id);
+    }
+
+    @Override
+    public boolean hasCanchasInSucursal(Integer sucursalId) {
+        return canchaRepository.existsBySucursalSucursalId(sucursalId);
     }
 
     private CanchaResponse toCanchaResponse(Cancha cancha) {

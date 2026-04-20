@@ -5,41 +5,45 @@ import com.sport.managementsport.company.domain.Sucursal;
 import com.sport.managementsport.company.dto.CreateSucursalRequest;
 import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
-import com.sport.managementsport.company.repository.CanchaRepository;
-import com.sport.managementsport.company.repository.EmpresaRepository;
 import com.sport.managementsport.company.repository.SucursalRepository;
+import com.sport.managementsport.company.service.CanchaService;
+import com.sport.managementsport.company.service.EmpresaService;
 import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class SucursalServiceImpl implements SucursalService {
 
     private final SucursalRepository sucursalRepository;
-    private final EmpresaRepository empresaRepository;
-    private final CanchaRepository canchaRepository;
+    private final EmpresaService empresaService;
+    private final CanchaService canchaService;
+
+    public SucursalServiceImpl(SucursalRepository sucursalRepository, @Lazy EmpresaService empresaService, @Lazy CanchaService canchaService) {
+        this.sucursalRepository = sucursalRepository;
+        this.empresaService = empresaService;
+        this.canchaService = canchaService;
+    }
 
     @Override
     @Transactional
     public SucursalResponse createSucursal(CreateSucursalRequest request) {
-        Empresa empresa = empresaRepository.findById(request.getEmpresaId())
-                .orElseThrow(() -> new ResourceNotFoundException("No se puede crear la sucursal. Empresa no encontrada con id: " + request.getEmpresaId()));
+        // Lógica corregida: obtiene la entidad Empresa real
+        Empresa empresa = empresaService.findEmpresaEntityById(request.getEmpresaId());
 
         if (sucursalRepository.existsByNombreAndEmpresaEmpresaId(request.getNombre(), request.getEmpresaId())) {
             throw new DuplicateResourceException("Ya existe una sucursal con el nombre '" + request.getNombre() + "' en esta empresa.");
         }
 
         Sucursal sucursal = new Sucursal();
-        sucursal.setEmpresa(empresa);
+        sucursal.setEmpresa(empresa); // <-- Asignación correcta
         sucursal.setNombre(request.getNombre());
         sucursal.setDireccion(request.getDireccion());
         sucursal.setTelefono(request.getTelefono());
@@ -51,8 +55,10 @@ public class SucursalServiceImpl implements SucursalService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SucursalResponse> getSucursalById(Integer id) {
-        return sucursalRepository.findById(id).map(this::toSucursalResponse);
+    public SucursalResponse getSucursalById(Integer id) {
+        return sucursalRepository.findById(id)
+                .map(this::toSucursalResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
     }
 
     @Override
@@ -66,8 +72,7 @@ public class SucursalServiceImpl implements SucursalService {
     @Override
     @Transactional
     public SucursalResponse updateSucursal(Integer id, UpdateSucursalRequest request) {
-        Sucursal sucursal = sucursalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
+        Sucursal sucursal = findSucursalEntityById(id);
 
         if (request.getNombre() != null) {
             sucursalRepository.findByNombreAndEmpresaEmpresaId(request.getNombre(), sucursal.getEmpresa().getEmpresaId())
@@ -100,7 +105,7 @@ public class SucursalServiceImpl implements SucursalService {
             throw new ResourceNotFoundException("Sucursal no encontrada con id: " + id);
         }
 
-        if (canchaRepository.existsBySucursalSucursalId(id)) {
+        if (canchaService.hasCanchasInSucursal(id)) {
             throw new BusinessRuleException("No se puede eliminar la sucursal con id " + id + " porque tiene canchas asociadas.");
         }
         
@@ -110,7 +115,7 @@ public class SucursalServiceImpl implements SucursalService {
     @Override
     @Transactional(readOnly = true)
     public List<SucursalResponse> getSucursalesByEmpresaId(Integer empresaId) {
-        if (!empresaRepository.existsById(empresaId)) {
+        if (!empresaService.empresaExists(empresaId)) {
             throw new ResourceNotFoundException("Empresa no encontrada con id: " + empresaId);
         }
         return sucursalRepository.findByEmpresaEmpresaId(empresaId).stream()
@@ -121,8 +126,7 @@ public class SucursalServiceImpl implements SucursalService {
     @Override
     @Transactional
     public SucursalResponse activarSucursal(Integer id) {
-        Sucursal sucursal = sucursalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
+        Sucursal sucursal = findSucursalEntityById(id);
         sucursal.setActivo(true);
         Sucursal savedSucursal = sucursalRepository.save(sucursal);
         return toSucursalResponse(savedSucursal);
@@ -131,8 +135,7 @@ public class SucursalServiceImpl implements SucursalService {
     @Override
     @Transactional
     public SucursalResponse desactivarSucursal(Integer id) {
-        Sucursal sucursal = sucursalRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
+        Sucursal sucursal = findSucursalEntityById(id);
         sucursal.setActivo(false);
         Sucursal savedSucursal = sucursalRepository.save(sucursal);
         return toSucursalResponse(savedSucursal);
@@ -147,6 +150,11 @@ public class SucursalServiceImpl implements SucursalService {
     @Override
     public boolean hasSucursales(Integer empresaId) {
         return sucursalRepository.existsByEmpresaEmpresaId(empresaId);
+    }
+
+    @Override
+    public boolean sucursalExists(Integer id) {
+        return sucursalRepository.existsById(id);
     }
 
     private SucursalResponse toSucursalResponse(Sucursal sucursal) {

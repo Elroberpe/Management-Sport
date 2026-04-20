@@ -1,14 +1,11 @@
 package com.sport.managementsport.company.controller;
 
-import com.sport.managementsport.company.dto.CanchaResponse;
 import com.sport.managementsport.company.dto.CreateSucursalRequest;
 import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
-import com.sport.managementsport.company.service.CanchaService;
 import com.sport.managementsport.company.service.SucursalService;
-import com.sport.managementsport.identity.dto.UsuarioResponse;
-import com.sport.managementsport.identity.service.UsuarioService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,17 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/sucursales")
+@RequiredArgsConstructor
 public class SucursalController {
 
     private final SucursalService sucursalService;
-    private final CanchaService canchaService;
-    private final UsuarioService usuarioService;
-
-    public SucursalController(SucursalService sucursalService, CanchaService canchaService, UsuarioService usuarioService) {
-        this.sucursalService = sucursalService;
-        this.canchaService = canchaService;
-        this.usuarioService = usuarioService;
-    }
 
     @PostMapping
     public ResponseEntity<SucursalResponse> createSucursal(@Valid @RequestBody CreateSucursalRequest request) {
@@ -35,17 +25,21 @@ public class SucursalController {
         return new ResponseEntity<>(newSucursal, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<SucursalResponse> getSucursalById(@PathVariable Integer id) {
-        return sucursalService.getSucursalById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping
+    public ResponseEntity<List<SucursalResponse>> getAllSucursales(@RequestParam(required = false) Integer empresaId) {
+        List<SucursalResponse> sucursales;
+        if (empresaId != null) {
+            sucursales = sucursalService.getSucursalesByEmpresaId(empresaId);
+        } else {
+            sucursales = sucursalService.getAllSucursales();
+        }
+        return ResponseEntity.ok(sucursales);
     }
 
-    @GetMapping
-    public ResponseEntity<List<SucursalResponse>> getAllSucursales() {
-        List<SucursalResponse> sucursales = sucursalService.getAllSucursales();
-        return ResponseEntity.ok(sucursales);
+    @GetMapping("/{id}")
+    public ResponseEntity<SucursalResponse> getSucursalById(@PathVariable Integer id) {
+        SucursalResponse sucursal = sucursalService.getSucursalById(id);
+        return ResponseEntity.ok(sucursal);
     }
 
     @PutMapping("/{id}")
@@ -62,27 +56,11 @@ public class SucursalController {
 
     @PatchMapping("/{id}/activar")
     public ResponseEntity<SucursalResponse> activarSucursal(@PathVariable Integer id) {
-        SucursalResponse sucursal = sucursalService.activarSucursal(id);
-        return ResponseEntity.ok(sucursal);
+        return ResponseEntity.ok(sucursalService.activarSucursal(id));
     }
 
     @PatchMapping("/{id}/desactivar")
     public ResponseEntity<SucursalResponse> desactivarSucursal(@PathVariable Integer id) {
-        SucursalResponse sucursal = sucursalService.desactivarSucursal(id);
-        return ResponseEntity.ok(sucursal);
-    }
-
-    // --- Endpoints Anidados ---
-
-    @GetMapping("/{sucursalId}/canchas")
-    public ResponseEntity<List<CanchaResponse>> getCanchasBySucursal(@PathVariable Integer sucursalId) {
-        List<CanchaResponse> canchas = canchaService.getCanchasBySucursalId(sucursalId);
-        return ResponseEntity.ok(canchas);
-    }
-
-    @GetMapping("/{sucursalId}/usuarios")
-    public ResponseEntity<List<UsuarioResponse>> getUsuariosBySucursal(@PathVariable Integer sucursalId) {
-        List<UsuarioResponse> usuarios = usuarioService.getUsuariosBySucursalId(sucursalId);
-        return ResponseEntity.ok(usuarios);
+        return ResponseEntity.ok(sucursalService.desactivarSucursal(id));
     }
 }

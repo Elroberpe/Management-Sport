@@ -21,4 +21,7 @@ public interface CanchaService {
     List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId);
     Cancha findCanchaEntityById(Integer id);
     boolean canchaExists(Integer id);
+
+    // Nuevo método para validación
+    boolean hasCanchasInSucursal(Integer sucursalId);
 }

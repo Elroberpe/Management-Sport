@@ -6,12 +6,11 @@ import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface SucursalService {
 
     SucursalResponse createSucursal(CreateSucursalRequest request);
-    Optional<SucursalResponse> getSucursalById(Integer id);
+    SucursalResponse getSucursalById(Integer id); // <-- Firma corregida
     List<SucursalResponse> getAllSucursales();
     SucursalResponse updateSucursal(Integer id, UpdateSucursalRequest request);
     void deleteSucursal(Integer id);
@@ -19,7 +18,6 @@ public interface SucursalService {
     SucursalResponse activarSucursal(Integer id);
     SucursalResponse desactivarSucursal(Integer id);
     Sucursal findSucursalEntityById(Integer id);
-
-    // Nuevo método para la validación
     boolean hasSucursales(Integer empresaId);
+    boolean sucursalExists(Integer id);
 }

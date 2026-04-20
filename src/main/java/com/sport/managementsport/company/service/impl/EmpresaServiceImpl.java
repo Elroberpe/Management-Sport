@@ -10,6 +10,7 @@ import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     private final EmpresaRepository empresaRepository;
     private final SucursalService sucursalService;
 
-    public EmpresaServiceImpl(EmpresaRepository empresaRepository, SucursalService sucursalService) {
+    public EmpresaServiceImpl(EmpresaRepository empresaRepository, @Lazy SucursalService sucursalService) {
         this.empresaRepository = empresaRepository;
         this.sucursalService = sucursalService;
     }
@@ -67,8 +68,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional
     public EmpresaResponse updateEmpresa(Integer id, UpdateEmpresaRequest request) {
-        Empresa empresa = empresaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + id));
+        Empresa empresa = findEmpresaEntityById(id);
 
         if (request.getNombreComercial() != null) {
             empresaRepository.findByNombreComercial(request.getNombreComercial()).ifPresent(e -> {
@@ -97,6 +97,18 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new BusinessRuleException("No se puede eliminar la empresa con id " + id + " porque tiene sucursales asociadas.");
         }
         empresaRepository.deleteById(id);
+    }
+
+    @Override
+    public boolean empresaExists(Integer id) {
+        return empresaRepository.existsById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Empresa findEmpresaEntityById(Integer id) {
+        return empresaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + id));
     }
 
     private EmpresaResponse toEmpresaResponse(Empresa empresa) {
