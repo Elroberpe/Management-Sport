@@ -144,6 +144,11 @@ public class SucursalServiceImpl implements SucursalService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + id));
     }
 
+    @Override
+    public boolean hasSucursales(Integer empresaId) {
+        return sucursalRepository.existsByEmpresaEmpresaId(empresaId);
+    }
+
     private SucursalResponse toSucursalResponse(Sucursal sucursal) {
         return new SucursalResponse(
                 sucursal.getSucursalId(),

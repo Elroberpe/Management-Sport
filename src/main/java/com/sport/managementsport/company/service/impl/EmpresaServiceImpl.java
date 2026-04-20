@@ -5,8 +5,8 @@ import com.sport.managementsport.company.dto.CreateEmpresaRequest;
 import com.sport.managementsport.company.dto.EmpresaResponse;
 import com.sport.managementsport.company.dto.UpdateEmpresaRequest;
 import com.sport.managementsport.company.repository.EmpresaRepository;
-import com.sport.managementsport.company.repository.SucursalRepository;
 import com.sport.managementsport.company.service.EmpresaService;
+import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 public class EmpresaServiceImpl implements EmpresaService {
 
     private final EmpresaRepository empresaRepository;
-    private final SucursalRepository sucursalRepository;
+    private final SucursalService sucursalService;
 
-    public EmpresaServiceImpl(EmpresaRepository empresaRepository, SucursalRepository sucursalRepository) {
+    public EmpresaServiceImpl(EmpresaRepository empresaRepository, SucursalService sucursalService) {
         this.empresaRepository = empresaRepository;
-        this.sucursalRepository = sucursalRepository;
+        this.sucursalService = sucursalService;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class EmpresaServiceImpl implements EmpresaService {
         if (!empresaRepository.existsById(id)) {
             throw new ResourceNotFoundException("Empresa no encontrada con id: " + id);
         }
-        if (sucursalRepository.existsByEmpresaEmpresaId(id)) {
+        if (sucursalService.hasSucursales(id)) {
             throw new BusinessRuleException("No se puede eliminar la empresa con id " + id + " porque tiene sucursales asociadas.");
         }
         empresaRepository.deleteById(id);
