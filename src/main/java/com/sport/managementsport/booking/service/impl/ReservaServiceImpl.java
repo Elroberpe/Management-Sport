@@ -11,7 +11,7 @@ import com.sport.managementsport.common.enums.TipoReserva;
 import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.domain.Cancha;
 import com.sport.managementsport.company.service.CanchaService;
-import com.sport.managementsport.events.domain.Evento; // <-- EL IMPORT FALTANTE
+import com.sport.managementsport.events.domain.Evento;
 import com.sport.managementsport.events.domain.Mantenimiento;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
@@ -251,9 +251,10 @@ public class ReservaServiceImpl implements ReservaService {
     @Transactional
     public void actualizarEstadosDeReservas() {
         log.info("Iniciando tarea programada: Actualizando estados de reservas...");
+        LocalDateTime now = LocalDateTime.now();
         
         List<Reserva> reservasParaCompletar = reservaRepository.findReservasToUpdateStatus(
-                EstadoReserva.PAGADA, LocalDate.now(), LocalTime.now());
+                EstadoReserva.PAGADA.name(), now);
 
         if (!reservasParaCompletar.isEmpty()) {
             log.info("Se encontraron {} reservas pagadas para marcar como COMPLETADAS.", reservasParaCompletar.size());
@@ -264,7 +265,7 @@ public class ReservaServiceImpl implements ReservaService {
         }
         
         List<Reserva> reservasParaCancelar = reservaRepository.findReservasToUpdateStatus(
-                EstadoReserva.PENDIENTE, LocalDate.now(), LocalTime.now());
+                EstadoReserva.PENDIENTE.name(), now);
         
         if (!reservasParaCancelar.isEmpty()) {
             log.info("Se encontraron {} reservas pendientes expiradas para CANCELAR.", reservasParaCancelar.size());
@@ -287,6 +288,19 @@ public class ReservaServiceImpl implements ReservaService {
             throw new BusinessRuleException("El horario para el evento se solapa con un mantenimiento.");
         }
         if (!reservaRepository.findConflictingReservas(canchaId, fecha, horaInicio, horaFin).isEmpty()) {
+            throw new BusinessRuleException("El horario para el evento se solapa con una reserva existente.");
+        }
+    }
+
+    @Override
+    public void validateHorarioDisponible(Integer canchaId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Integer eventoIdToIgnore) {
+        LocalDateTime inicio = fecha.atTime(horaInicio);
+        LocalDateTime fin = fecha.atTime(horaFin);
+
+        if (!mantenimientoService.findConflictingMantenimientos(canchaId, inicio, fin).isEmpty()) {
+            throw new BusinessRuleException("El horario para el evento se solapa con un mantenimiento.");
+        }
+        if (!reservaRepository.findConflictingReservasIgnoringEvent(canchaId, fecha, horaInicio, horaFin, eventoIdToIgnore).isEmpty()) {
             throw new BusinessRuleException("El horario para el evento se solapa con una reserva existente.");
         }
     }

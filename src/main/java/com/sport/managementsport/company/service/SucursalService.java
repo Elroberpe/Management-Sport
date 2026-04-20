@@ -9,11 +9,21 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SucursalService {
-    // ... métodos existentes
+
+    SucursalResponse createSucursal(CreateSucursalRequest request);
+
+    Optional<SucursalResponse> getSucursalById(Integer id);
+
+    List<SucursalResponse> getAllSucursales();
+
     SucursalResponse updateSucursal(Integer id, UpdateSucursalRequest request);
+
     void deleteSucursal(Integer id);
+
     List<SucursalResponse> getSucursalesByEmpresaId(Integer empresaId);
+
     SucursalResponse activarSucursal(Integer id);
+
     SucursalResponse desactivarSucursal(Integer id);
 
     // Método para uso interno

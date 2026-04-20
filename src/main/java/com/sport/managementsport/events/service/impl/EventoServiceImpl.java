@@ -4,17 +4,19 @@ import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.booking.dto.CancelReservaRequest;
 import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoEvento;
+import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.domain.Sucursal;
 import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.events.domain.Evento;
-import com.sport.managementsport.events.dto.CancelEventoRequest;
-import com.sport.managementsport.events.dto.CreateEventoRequest;
-import com.sport.managementsport.events.dto.EventoResponse;
-import com.sport.managementsport.events.dto.UpdateEventoRequest;
+import com.sport.managementsport.events.domain.EventoHorario;
+import com.sport.managementsport.events.dto.*;
+import com.sport.managementsport.events.repository.EventoHorarioRepository;
 import com.sport.managementsport.events.repository.EventoRepository;
 import com.sport.managementsport.events.service.EventoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import com.sport.managementsport.finance.dto.CreatePagoRequest;
+import com.sport.managementsport.finance.service.PagoService;
 import com.sport.managementsport.identity.domain.Cliente;
 import com.sport.managementsport.identity.service.ClienteService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +35,11 @@ import java.util.stream.Collectors;
 public class EventoServiceImpl implements EventoService {
 
     private final EventoRepository eventoRepository;
+    private final EventoHorarioRepository eventoHorarioRepository;
     private final ReservaService reservaService;
     private final ClienteService clienteService;
     private final SucursalService sucursalService;
+    private final PagoService pagoService;
 
     @Override
     @Transactional
@@ -53,26 +58,34 @@ public class EventoServiceImpl implements EventoService {
         evento.setDescripcion(request.getDescripcion());
         evento.setTipoEvento(request.getTipoEvento());
         evento.setMontoPactado(request.getMontoPactado());
+        evento.setSaldoPendiente(request.getMontoPactado());
         evento.setFechaInicio(request.getFechaInicio());
         evento.setFechaFin(request.getFechaFin());
         
         Evento savedEvento = eventoRepository.save(evento);
 
         List<Reserva> reservasCreadas = new ArrayList<>();
-        for (CreateEventoRequest.HorarioBloqueoDto horario : request.getHorarios()) {
+        for (CreateEventoRequest.HorarioBloqueoDto horarioDto : request.getHorarios()) {
+            EventoHorario eventoHorario = new EventoHorario();
+            eventoHorario.setEvento(savedEvento);
+            eventoHorario.setFecha(horarioDto.getFecha());
+            eventoHorario.setHoraInicio(horarioDto.getHoraInicio());
+            eventoHorario.setHoraFin(horarioDto.getHoraFin());
+            evento.getHorarios().add(eventoHorario);
+
             Reserva reservaDeEvento = reservaService.createReservaForEvento(
-                horario.getCanchaId(),
+                horarioDto.getCanchaId(),
                 cliente.getClienteId(),
-                horario.getFecha(),
-                horario.getHoraInicio(),
-                horario.getHoraFin(),
+                horarioDto.getFecha(),
+                horarioDto.getHoraInicio(),
+                horarioDto.getHoraFin(),
                 savedEvento
             );
             reservasCreadas.add(reservaDeEvento);
         }
         
         savedEvento.setReservas(reservasCreadas);
-        return toEventoResponse(savedEvento);
+        return toEventoResponse(eventoRepository.save(savedEvento));
     }
 
     @Override
@@ -102,7 +115,10 @@ public class EventoServiceImpl implements EventoService {
         if (request.getNombre() != null) evento.setNombre(request.getNombre());
         if (request.getDescripcion() != null) evento.setDescripcion(request.getDescripcion());
         if (request.getTipoEvento() != null) evento.setTipoEvento(request.getTipoEvento());
-        if (request.getMontoPactado() != null) evento.setMontoPactado(request.getMontoPactado());
+        if (request.getMontoPactado() != null) {
+            evento.setMontoPactado(request.getMontoPactado());
+            evento.setSaldoPendiente(request.getMontoPactado().subtract(evento.getMontoPagado()));
+        }
         if (request.getFechaInicio() != null) evento.setFechaInicio(request.getFechaInicio());
         if (request.getFechaFin() != null) evento.setFechaFin(request.getFechaFin());
 
@@ -130,6 +146,76 @@ public class EventoServiceImpl implements EventoService {
         return toEventoResponse(updatedEvento);
     }
 
+    @Override
+    @Transactional
+    public EventoResponse addPago(Integer id, AddPagoToEventoRequest request) {
+        Evento evento = eventoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado con id: " + id));
+
+        if (evento.getEstado() == EstadoEvento.CANCELADO || evento.getEstado() == EstadoEvento.FINALIZADO) {
+            throw new BusinessRuleException("No se puede añadir un pago a un evento finalizado o cancelado.");
+        }
+
+        BigDecimal nuevoMontoPagado = evento.getMontoPagado().add(request.getMonto());
+        if (nuevoMontoPagado.compareTo(evento.getMontoPactado()) > 0) {
+            throw new BusinessRuleException("El monto del pago excede el saldo pendiente del evento.");
+        }
+
+        pagoService.createPago(CreatePagoRequest.builder()
+                .evento(evento)
+                .monto(request.getMonto())
+                .metodoPago(request.getMetodoPago())
+                .tipoTransaccion(TipoTransaccion.INGRESO)
+                .nota("Pago para evento #" + evento.getEventoId())
+                .build());
+
+        evento.setMontoPagado(nuevoMontoPagado);
+        evento.setSaldoPendiente(evento.getMontoPactado().subtract(nuevoMontoPagado));
+        
+        Evento updatedEvento = eventoRepository.save(evento);
+        return toEventoResponse(updatedEvento);
+    }
+
+    @Override
+    @Transactional
+    public EventoResponse reprogramarEvento(Integer id, ReprogramarEventoRequest request) {
+        Evento evento = eventoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado con id: " + id));
+
+        if (evento.getEstado() == EstadoEvento.CANCELADO || evento.getEstado() == EstadoEvento.FINALIZADO) {
+            throw new BusinessRuleException("No se puede reprogramar un evento finalizado o cancelado.");
+        }
+        if (evento.getReservas().size() != request.getNuevosHorarios().size()) {
+            throw new BusinessRuleException("El número de nuevos horarios no coincide con el número de reservas del evento.");
+        }
+
+        for (var horario : request.getNuevosHorarios()) {
+            reservaService.validateHorarioDisponible(horario.getCanchaId(), horario.getFecha(), horario.getHoraInicio(), horario.getHoraFin(), id);
+        }
+
+        eventoHorarioRepository.deleteByEventoEventoId(id);
+        evento.getHorarios().clear();
+
+        for (int i = 0; i < request.getNuevosHorarios().size(); i++) {
+            var nuevoHorarioDto = request.getNuevosHorarios().get(i);
+            Reserva reservaAActualizar = evento.getReservas().get(i);
+
+            reservaAActualizar.setFecha(nuevoHorarioDto.getFecha());
+            reservaAActualizar.setHoraInicio(nuevoHorarioDto.getHoraInicio());
+            reservaAActualizar.setHoraFin(nuevoHorarioDto.getHoraFin());
+
+            EventoHorario nuevoHorario = new EventoHorario();
+            nuevoHorario.setEvento(evento);
+            nuevoHorario.setFecha(nuevoHorarioDto.getFecha());
+            nuevoHorario.setHoraInicio(nuevoHorarioDto.getHoraInicio());
+            nuevoHorario.setHoraFin(nuevoHorarioDto.getHoraFin());
+            evento.getHorarios().add(nuevoHorario);
+        }
+
+        Evento updatedEvento = eventoRepository.save(evento);
+        return toEventoResponse(updatedEvento);
+    }
+
     private EventoResponse toEventoResponse(Evento evento) {
         List<EventoResponse.ReservaInfo> reservaInfoList = evento.getReservas().stream()
                 .map(reserva -> EventoResponse.ReservaInfo.builder()
@@ -150,6 +236,8 @@ public class EventoServiceImpl implements EventoService {
                 .descripcion(evento.getDescripcion())
                 .tipoEvento(evento.getTipoEvento())
                 .montoPactado(evento.getMontoPactado())
+                .montoPagado(evento.getMontoPagado())
+                .saldoPendiente(evento.getSaldoPendiente())
                 .fechaInicio(evento.getFechaInicio())
                 .fechaFin(evento.getFechaFin())
                 .estado(evento.getEstado())

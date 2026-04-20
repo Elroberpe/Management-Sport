@@ -41,6 +41,9 @@ public class Evento extends AuditableEntity {
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reserva> reservas = new ArrayList<>();
 
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EventoHorario> horarios = new ArrayList<>();
+
     @Column(nullable = false, length = 150)
     private String nombre;
 
@@ -53,6 +56,12 @@ public class Evento extends AuditableEntity {
 
     @Column(name = "monto_pactado", precision = 10, scale = 2)
     private BigDecimal montoPactado;
+
+    @Column(name = "monto_pagado", precision = 10, scale = 2)
+    private BigDecimal montoPagado = BigDecimal.ZERO;
+
+    @Column(name = "saldo_pendiente", precision = 10, scale = 2)
+    private BigDecimal saldoPendiente;
 
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;

@@ -1,9 +1,6 @@
 package com.sport.managementsport.events.controller;
 
-import com.sport.managementsport.events.dto.CancelEventoRequest;
-import com.sport.managementsport.events.dto.CreateEventoRequest;
-import com.sport.managementsport.events.dto.EventoResponse;
-import com.sport.managementsport.events.dto.UpdateEventoRequest;
+import com.sport.managementsport.events.dto.*;
 import com.sport.managementsport.events.service.EventoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +42,15 @@ public class EventoController {
     @PatchMapping("/{id}/cancelar")
     public ResponseEntity<EventoResponse> cancelarEvento(@PathVariable Integer id, @Valid @RequestBody CancelEventoRequest request) {
         return ResponseEntity.ok(eventoService.cancelarEvento(id, request));
+    }
+
+    @PostMapping("/{id}/pagos")
+    public ResponseEntity<EventoResponse> addPago(@PathVariable Integer id, @Valid @RequestBody AddPagoToEventoRequest request) {
+        return ResponseEntity.ok(eventoService.addPago(id, request));
+    }
+
+    @PostMapping("/{id}/reprogramar")
+    public ResponseEntity<EventoResponse> reprogramarEvento(@PathVariable Integer id, @Valid @RequestBody ReprogramarEventoRequest request) {
+        return ResponseEntity.ok(eventoService.reprogramarEvento(id, request));
     }
 }

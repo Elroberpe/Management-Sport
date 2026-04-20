@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EventoHorarioRepository extends JpaRepository<EventoHorario, Integer> {
+    void deleteByEventoEventoId(Integer eventoId);
 }

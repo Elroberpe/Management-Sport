@@ -20,6 +20,8 @@ public class EventoResponse {
     private String descripcion;
     private TipoEvento tipoEvento;
     private BigDecimal montoPactado;
+    private BigDecimal montoPagado; // Campo que faltaba
+    private BigDecimal saldoPendiente; // Campo que faltaba
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private EstadoEvento estado;
@@ -32,6 +34,6 @@ public class EventoResponse {
         private Integer canchaId;
         private String nombreCancha;
         private LocalDate fecha;
-        private String horario; // e.g., "18:00 - 22:00"
+        private String horario;
     }
 }

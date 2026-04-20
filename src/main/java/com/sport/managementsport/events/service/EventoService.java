@@ -1,9 +1,6 @@
 package com.sport.managementsport.events.service;
 
-import com.sport.managementsport.events.dto.CancelEventoRequest;
-import com.sport.managementsport.events.dto.CreateEventoRequest;
-import com.sport.managementsport.events.dto.EventoResponse;
-import com.sport.managementsport.events.dto.UpdateEventoRequest;
+import com.sport.managementsport.events.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,4 +10,6 @@ public interface EventoService {
     Page<EventoResponse> getAllEventos(Pageable pageable);
     EventoResponse updateEvento(Integer id, UpdateEventoRequest request);
     EventoResponse cancelarEvento(Integer id, CancelEventoRequest request);
+    EventoResponse addPago(Integer id, AddPagoToEventoRequest request);
+    EventoResponse reprogramarEvento(Integer id, ReprogramarEventoRequest request);
 }
