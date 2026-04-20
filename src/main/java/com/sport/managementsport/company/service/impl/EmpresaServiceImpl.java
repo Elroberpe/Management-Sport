@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,30 +30,30 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional
     public EmpresaResponse createEmpresa(CreateEmpresaRequest request) {
-        // 1. Validación de lógica de negocio
         if (empresaRepository.existsByRazonSocial(request.getRazonSocial())) {
-            throw new DuplicateResourceException("La razón social '" + request.getRazonSocial() + "' ya está registrada.");
+            throw new DuplicateResourceException("La razón social '" + request.getRazonSocial() + "' ya está en uso.");
+        }
+        if (empresaRepository.existsByNombreComercial(request.getNombreComercial())) {
+            throw new DuplicateResourceException("El nombre comercial '" + request.getNombreComercial() + "' ya está en uso.");
         }
 
-        // 2. Mapeo y transformación de datos
         Empresa empresa = new Empresa();
-        empresa.setNombreComercial(request.getNombreComercial().toLowerCase());
+        empresa.setNombreComercial(request.getNombreComercial());
         empresa.setRazonSocial(request.getRazonSocial());
-        empresa.setEmailContacto(request.getEmailContacto().toLowerCase());
-        empresa.setTelefonoPrincipal(request.getTelefonoPrincipal());
         empresa.setLogoUrl(request.getLogoUrl());
+        empresa.setEmailContacto(request.getEmailContacto());
+        empresa.setTelefonoPrincipal(request.getTelefonoPrincipal());
 
-        // 3. Guardado en la base de datos
         Empresa savedEmpresa = empresaRepository.save(empresa);
-
-        // 4. Retorno del DTO de respuesta
         return toEmpresaResponse(savedEmpresa);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EmpresaResponse> getEmpresaById(Integer id) {
-        return empresaRepository.findById(id).map(this::toEmpresaResponse);
+    public EmpresaResponse getEmpresaById(Integer id) {
+        return empresaRepository.findById(id)
+                .map(this::toEmpresaResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + id));
     }
 
     @Override
@@ -71,19 +70,18 @@ public class EmpresaServiceImpl implements EmpresaService {
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + id));
 
-        // Actualización parcial
         if (request.getNombreComercial() != null) {
-            empresa.setNombreComercial(request.getNombreComercial().toLowerCase());
+            empresaRepository.findByNombreComercial(request.getNombreComercial()).ifPresent(e -> {
+                if (!e.getEmpresaId().equals(id)) {
+                    throw new DuplicateResourceException("El nombre comercial '" + request.getNombreComercial() + "' ya está en uso.");
+                }
+            });
+            empresa.setNombreComercial(request.getNombreComercial());
         }
-        if (request.getEmailContacto() != null) {
-            empresa.setEmailContacto(request.getEmailContacto().toLowerCase());
-        }
-        if (request.getTelefonoPrincipal() != null) {
-            empresa.setTelefonoPrincipal(request.getTelefonoPrincipal());
-        }
-        if (request.getLogoUrl() != null) {
-            empresa.setLogoUrl(request.getLogoUrl());
-        }
+
+        if (request.getLogoUrl() != null) empresa.setLogoUrl(request.getLogoUrl());
+        if (request.getEmailContacto() != null) empresa.setEmailContacto(request.getEmailContacto());
+        if (request.getTelefonoPrincipal() != null) empresa.setTelefonoPrincipal(request.getTelefonoPrincipal());
 
         Empresa updatedEmpresa = empresaRepository.save(empresa);
         return toEmpresaResponse(updatedEmpresa);
@@ -92,20 +90,15 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional
     public void deleteEmpresa(Integer id) {
-        // Primero, verificar que la empresa exista
         if (!empresaRepository.existsById(id)) {
             throw new ResourceNotFoundException("Empresa no encontrada con id: " + id);
         }
-
-        // no eliminar empresa si tiene sucursales
         if (sucursalRepository.existsByEmpresaEmpresaId(id)) {
             throw new BusinessRuleException("No se puede eliminar la empresa con id " + id + " porque tiene sucursales asociadas.");
         }
-
         empresaRepository.deleteById(id);
     }
 
-    // --- Mapper Methods ---
     private EmpresaResponse toEmpresaResponse(Empresa empresa) {
         return new EmpresaResponse(
                 empresa.getEmpresaId(),

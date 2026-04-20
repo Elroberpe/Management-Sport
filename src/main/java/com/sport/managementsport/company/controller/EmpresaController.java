@@ -2,10 +2,8 @@ package com.sport.managementsport.company.controller;
 
 import com.sport.managementsport.company.dto.CreateEmpresaRequest;
 import com.sport.managementsport.company.dto.EmpresaResponse;
-import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateEmpresaRequest;
 import com.sport.managementsport.company.service.EmpresaService;
-import com.sport.managementsport.company.service.SucursalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,11 +16,9 @@ import java.util.List;
 public class EmpresaController {
 
     private final EmpresaService empresaService;
-    private final SucursalService sucursalService;
 
-    public EmpresaController(EmpresaService empresaService, SucursalService sucursalService) {
+    public EmpresaController(EmpresaService empresaService) {
         this.empresaService = empresaService;
-        this.sucursalService = sucursalService;
     }
 
     @PostMapping
@@ -31,17 +27,15 @@ public class EmpresaController {
         return new ResponseEntity<>(newEmpresa, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<EmpresaResponse> getEmpresaById(@PathVariable Integer id) {
-        return empresaService.getEmpresaById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
     @GetMapping
     public ResponseEntity<List<EmpresaResponse>> getAllEmpresas() {
-        List<EmpresaResponse> empresas = empresaService.getAllEmpresas();
-        return ResponseEntity.ok(empresas);
+        return ResponseEntity.ok(empresaService.getAllEmpresas());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<EmpresaResponse> getEmpresaById(@PathVariable Integer id) {
+        EmpresaResponse empresa = empresaService.getEmpresaById(id);
+        return ResponseEntity.ok(empresa);
     }
 
     @PutMapping("/{id}")
@@ -54,11 +48,5 @@ public class EmpresaController {
     public ResponseEntity<Void> deleteEmpresa(@PathVariable Integer id) {
         empresaService.deleteEmpresa(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{empresaId}/sucursales")
-    public ResponseEntity<List<SucursalResponse>> getSucursalesByEmpresa(@PathVariable Integer empresaId) {
-        List<SucursalResponse> sucursales = sucursalService.getSucursalesByEmpresaId(empresaId);
-        return ResponseEntity.ok(sucursales);
     }
 }

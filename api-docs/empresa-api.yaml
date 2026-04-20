@@ -57,7 +57,7 @@ paths:
       tags:
         - Empresas
       summary: "Obtener una empresa por su ID"
-      description: "Recupera los detalles de una empresa específica."
+      description: "Recupera los detalles de una empresa específica. Devuelve 404 si no se encuentra."
       responses:
         '200':
           description: "Detalles de la empresa."
