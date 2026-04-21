@@ -10,12 +10,14 @@ import com.sport.managementsport.events.dto.MantenimientoResponse;
 import com.sport.managementsport.events.dto.UpdateEstadoMantenimientoRequest;
 import com.sport.managementsport.events.dto.UpdateMantenimientoRequest;
 import com.sport.managementsport.events.repository.MantenimientoRepository;
+import com.sport.managementsport.events.repository.MantenimientoSpecification;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,8 +74,9 @@ public class MantenimientoServiceImpl implements MantenimientoService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<MantenimientoResponse> getAllMantenimientos(Pageable pageable) {
-        return mantenimientoRepository.findAll(pageable).map(this::toMantenimientoResponse);
+    public Page<MantenimientoResponse> getAllMantenimientos(Integer sucursalId, Pageable pageable) {
+        Specification<Mantenimiento> spec = Specification.where(MantenimientoSpecification.sucursalIdEquals(sucursalId));
+        return mantenimientoRepository.findAll(spec, pageable).map(this::toMantenimientoResponse);
     }
 
     @Override
