@@ -35,8 +35,10 @@ public class MantenimientoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<MantenimientoResponse>> getAllMantenimientos(@PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(mantenimientoService.getAllMantenimientos(pageable));
+    public ResponseEntity<Page<MantenimientoResponse>> getAllMantenimientos(
+            @RequestParam(required = false) Integer sucursalId, // <-- Nuevo parámetro
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(mantenimientoService.getAllMantenimientos(sucursalId, pageable));
     }
 
     @GetMapping("/cancha/{canchaId}")

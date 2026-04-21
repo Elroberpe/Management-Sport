@@ -15,7 +15,7 @@ public interface MantenimientoService {
     
     MantenimientoResponse createMantenimiento(CreateMantenimientoRequest request);
     MantenimientoResponse getMantenimientoById(Integer id);
-    Page<MantenimientoResponse> getAllMantenimientos(Pageable pageable);
+    Page<MantenimientoResponse> getAllMantenimientos(Integer sucursalId, Pageable pageable);
     List<MantenimientoResponse> getMantenimientosByCanchaId(Integer canchaId);
     MantenimientoResponse updateMantenimiento(Integer id, UpdateMantenimientoRequest request);
     MantenimientoResponse updateEstado(Integer id, UpdateEstadoMantenimientoRequest request);
