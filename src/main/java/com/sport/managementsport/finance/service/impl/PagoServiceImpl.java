@@ -71,9 +71,10 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PagoResponse> getAllPagos(LocalDate desde, LocalDate hasta, MetodoPago metodo, Pageable pageable) {
+    public Page<PagoResponse> getAllPagos(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId, Pageable pageable) {
         Specification<Pago> spec = Specification.where(PagoSpecification.fechaBetween(desde, hasta))
-                                                  .and(PagoSpecification.metodoPagoEquals(metodo));
+                                                  .and(PagoSpecification.metodoPagoEquals(metodo))
+                                                  .and(PagoSpecification.sucursalIdEquals(sucursalId));
         return pagoRepository.findAll(spec, pageable).map(this::toPagoResponse);
     }
 

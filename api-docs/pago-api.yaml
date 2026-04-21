@@ -34,6 +34,11 @@ paths:
           description: "Filtrar por método de pago."
           schema:
             $ref: '#/components/schemas/MetodoPago'
+        - name: sucursalId
+          in: query
+          description: "Filtra los pagos por la sucursal a la que pertenecen (a través de la reserva o evento)."
+          schema:
+            type: integer
         - name: page
           in: query
           schema:
@@ -61,8 +66,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/PagoResponse'
-                  # ... (otras propiedades de paginación)
-
   /pagos/{id}:
     parameters:
       - name: id

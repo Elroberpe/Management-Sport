@@ -132,7 +132,7 @@ CREATE TABLE Evento (
     CONSTRAINT FK_Evento_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
     CONSTRAINT FK_Evento_Cliente FOREIGN KEY (cliente_id) REFERENCES Cliente(cliente_id),
     CONSTRAINT CK_Evento_Tipo CHECK (tipo_evento IN ('RELAMPAGO', 'TORNEO', 'CORPORATIVO')),
-    CONSTRAINT CK_Evento_Estado CHECK (estado IN ('PROGRAMADO', 'EN_CURSO', 'FINALIZADO', 'CANCELADO'))
+    CONSTRAINT CK_Evento_Estado CHECK (estado IN ('PROGRAMADO', 'EN_CURSO', 'FINALIZADO', 'CANCELADO', 'REEMBOLSADO'))
 );
 GO
 

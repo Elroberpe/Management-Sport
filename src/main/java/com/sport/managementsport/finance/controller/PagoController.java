@@ -26,8 +26,9 @@ public class PagoController {
             @RequestParam(required = false) LocalDate desde,
             @RequestParam(required = false) LocalDate hasta,
             @RequestParam(required = false) MetodoPago metodo,
+            @RequestParam(required = false) Integer sucursalId, // <-- Nuevo parámetro
             @PageableDefault(size = 50, sort = "fecha") Pageable pageable) {
-        Page<PagoResponse> pagos = pagoService.getAllPagos(desde, hasta, metodo, pageable);
+        Page<PagoResponse> pagos = pagoService.getAllPagos(desde, hasta, metodo, sucursalId, pageable);
         return ResponseEntity.ok(pagos);
     }
 
