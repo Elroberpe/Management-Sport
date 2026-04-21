@@ -21,7 +21,6 @@ import com.sport.managementsport.identity.domain.Cliente;
 import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.service.ClienteService;
 import com.sport.managementsport.identity.service.UsuarioService;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -36,7 +35,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -105,10 +103,11 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, EstadoReserva estado, Pageable pageable) {
+    public Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable) {
         Specification<Reserva> spec = Specification.where(ReservaSpecification.fechaEquals(fecha))
                 .and(ReservaSpecification.canchaIdEquals(canchaId))
                 .and(ReservaSpecification.clienteIdEquals(clienteId))
+                .and(ReservaSpecification.sucursalIdEquals(sucursalId))
                 .and(ReservaSpecification.estadoEquals(estado));
         return reservaRepository.findAll(spec, pageable).map(this::toReservaResponse);
     }

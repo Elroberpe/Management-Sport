@@ -29,6 +29,11 @@ paths:
           in: query
           schema:
             type: integer
+        - name: sucursalId
+          in: query
+          description: "Filtra las reservas por la sucursal a la que pertenecen."
+          schema:
+            type: integer
         - name: estado
           in: query
           schema:
@@ -59,27 +64,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ReservaResponse'
-    post:
-      tags:
-        - Reservas
-      summary: "Crear una nueva reserva"
-      description: "Crea una nueva reserva regular. El sistema valida la disponibilidad contra otras reservas, eventos y mantenimientos."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateReservaRequest'
-      responses:
-        '201':
-          description: "Reserva creada con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '400':
-          description: "Datos inválidos o conflicto de horario."
-
   /reservas/{id}:
     parameters:
       - $ref: '#/components/parameters/ReservaId'
