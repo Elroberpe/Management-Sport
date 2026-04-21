@@ -7,15 +7,18 @@ import com.sport.managementsport.events.domain.Evento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 public interface ReservaService {
 
     // --- Métodos para la API pública (usados por ReservaController) ---
     ReservaResponse createReserva(CreateReservaRequest request);
     ReservaResponse getReservaById(Integer id);
-    Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, EstadoReserva estado, Pageable pageable);
+    Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable);
     ReservaResponse updateReserva(Integer id, UpdateReservaRequest request);
     ReservaResponse addPago(Integer reservaId, AddPagoToReservaRequest request);
     ReservaResponse cancelReserva(Integer id, CancelReservaRequest request);
@@ -23,7 +26,9 @@ public interface ReservaService {
     void deleteReserva(Integer id);
 
     // --- Métodos para uso interno entre servicios ---
-    void validateHorarioDisponible(Integer canchaId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin);
-    void validateHorarioDisponible(Integer canchaId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Integer eventoIdToIgnore);
-    Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin, Evento evento);
+    List<Reserva> findConflictingReservas(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime);
+    void validateHorarioDisponible(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime);
+    void validateHorarioDisponible(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer eventoIdToIgnore);
+    Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDateTime startDateTime, LocalDateTime endDateTime, Evento evento);
+    void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado);
 }

@@ -4,6 +4,8 @@ import com.sport.managementsport.events.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
+
 public interface EventoService {
     EventoResponse createEvento(CreateEventoRequest request);
     EventoResponse getEventoById(Integer id);
@@ -12,4 +14,7 @@ public interface EventoService {
     EventoResponse cancelarEvento(Integer id, CancelEventoRequest request);
     EventoResponse addPago(Integer id, AddPagoToEventoRequest request);
     EventoResponse reprogramarEvento(Integer id, ReprogramarEventoRequest request);
+
+    // Nuevo método para uso interno
+    void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado);
 }

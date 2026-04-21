@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,7 +49,9 @@ public class EventoServiceImpl implements EventoService {
         Cliente cliente = clienteService.findClienteEntityById(request.getClienteId());
 
         for (CreateEventoRequest.HorarioBloqueoDto horario : request.getHorarios()) {
-            reservaService.validateHorarioDisponible(horario.getCanchaId(), horario.getFecha(), horario.getHoraInicio(), horario.getHoraFin());
+            LocalDateTime startDateTime = horario.getFecha().atTime(horario.getHoraInicio());
+            LocalDateTime endDateTime = horario.getFecha().atTime(horario.getHoraFin());
+            reservaService.validateHorarioDisponible(horario.getCanchaId(), startDateTime, endDateTime);
         }
 
         Evento evento = new Evento();
@@ -73,12 +76,13 @@ public class EventoServiceImpl implements EventoService {
             eventoHorario.setHoraFin(horarioDto.getHoraFin());
             evento.getHorarios().add(eventoHorario);
 
+            LocalDateTime startDateTime = horarioDto.getFecha().atTime(horarioDto.getHoraInicio());
+            LocalDateTime endDateTime = horarioDto.getFecha().atTime(horarioDto.getHoraFin());
             Reserva reservaDeEvento = reservaService.createReservaForEvento(
                 horarioDto.getCanchaId(),
                 cliente.getClienteId(),
-                horarioDto.getFecha(),
-                horarioDto.getHoraInicio(),
-                horarioDto.getHoraFin(),
+                startDateTime,
+                endDateTime,
                 savedEvento
             );
             reservasCreadas.add(reservaDeEvento);
@@ -190,7 +194,9 @@ public class EventoServiceImpl implements EventoService {
         }
 
         for (var horario : request.getNuevosHorarios()) {
-            reservaService.validateHorarioDisponible(horario.getCanchaId(), horario.getFecha(), horario.getHoraInicio(), horario.getHoraFin(), id);
+            LocalDateTime startDateTime = horario.getFecha().atTime(horario.getHoraInicio());
+            LocalDateTime endDateTime = horario.getFecha().atTime(horario.getHoraFin());
+            reservaService.validateHorarioDisponible(horario.getCanchaId(), startDateTime, endDateTime, id);
         }
 
         eventoHorarioRepository.deleteByEventoEventoId(id);
@@ -214,6 +220,18 @@ public class EventoServiceImpl implements EventoService {
 
         Evento updatedEvento = eventoRepository.save(evento);
         return toEventoResponse(updatedEvento);
+    }
+
+    @Override
+    @Transactional
+    public void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado) {
+        Evento evento = eventoRepository.findById(eventoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado con id: " + eventoId));
+
+        evento.setMontoPagado(evento.getMontoPagado().subtract(montoAnulado));
+        evento.setSaldoPendiente(evento.getSaldoPendiente().add(montoAnulado));
+        
+        eventoRepository.save(evento);
     }
 
     private EventoResponse toEventoResponse(Evento evento) {

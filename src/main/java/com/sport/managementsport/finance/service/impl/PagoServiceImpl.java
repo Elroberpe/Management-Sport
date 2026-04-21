@@ -1,10 +1,9 @@
 package com.sport.managementsport.finance.service.impl;
 
-import com.sport.managementsport.booking.domain.Reserva;
-import com.sport.managementsport.booking.repository.ReservaRepository;
+import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoPago;
-import com.sport.managementsport.common.enums.EstadoReserva;
 import com.sport.managementsport.common.enums.MetodoPago;
+import com.sport.managementsport.events.service.EventoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
 import com.sport.managementsport.finance.domain.Pago;
@@ -14,30 +13,36 @@ import com.sport.managementsport.finance.dto.PagoResponse;
 import com.sport.managementsport.finance.repository.PagoRepository;
 import com.sport.managementsport.finance.repository.PagoSpecification;
 import com.sport.managementsport.finance.service.PagoService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PagoServiceImpl implements PagoService {
 
     private final PagoRepository pagoRepository;
-    private final ReservaRepository reservaRepository;
+    private final ReservaService reservaService;
+    private final EventoService eventoService;
+
+    public PagoServiceImpl(PagoRepository pagoRepository, @Lazy ReservaService reservaService, @Lazy EventoService eventoService) {
+        this.pagoRepository = pagoRepository;
+        this.reservaService = reservaService;
+        this.eventoService = eventoService;
+    }
 
     @Override
     @Transactional
     public PagoResponse createPago(CreatePagoRequest request) {
         Pago pago = new Pago();
         pago.setReserva(request.getReserva());
+        pago.setEvento(request.getEvento());
         pago.setMonto(request.getMonto());
         pago.setMetodoPago(request.getMetodoPago());
         pago.setTipoTransaccion(request.getTipoTransaccion());
@@ -86,22 +91,16 @@ public class PagoServiceImpl implements PagoService {
         pago.setMotivoAnulacion(request.getMotivo());
         pagoRepository.save(pago);
 
-        Reserva reserva = pago.getReserva();
-        if (reserva != null) {
-            BigDecimal montoAnulado = pago.getMonto();
-            reserva.setMontoPagado(reserva.getMontoPagado().subtract(montoAnulado));
-            reserva.setSaldoPendiente(reserva.getSaldoPendiente().add(montoAnulado));
-
-            if (reserva.getEstadoReserva() == EstadoReserva.PAGADA) {
-                reserva.setEstadoReserva(EstadoReserva.PENDIENTE);
-            }
-            reservaRepository.save(reserva);
+        if (pago.getReserva() != null) {
+            reservaService.revertirSaldosPorAnulacion(pago.getReserva().getReservaId(), pago.getMonto());
+        } else if (pago.getEvento() != null) {
+            eventoService.revertirSaldosPorAnulacion(pago.getEvento().getEventoId(), pago.getMonto());
         }
     }
 
     @Override
     @Transactional
-    public void reasignarPagos(Reserva reservaOriginal, Reserva nuevaReserva) {
+    public void reasignarPagos(com.sport.managementsport.booking.domain.Reserva reservaOriginal, com.sport.managementsport.booking.domain.Reserva nuevaReserva) {
         List<Pago> pagosOriginales = pagoRepository.findByReservaReservaId(reservaOriginal.getReservaId());
         for (Pago pago : pagosOriginales) {
             pago.setReserva(nuevaReserva);

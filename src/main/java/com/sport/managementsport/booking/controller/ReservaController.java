@@ -42,9 +42,10 @@ public class ReservaController {
             @RequestParam(required = false) LocalDate fecha,
             @RequestParam(required = false) Integer canchaId,
             @RequestParam(required = false) Integer clienteId,
+            @RequestParam(required = false) Integer sucursalId, // <-- Nuevo parámetro
             @RequestParam(required = false) EstadoReserva estado,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
-        Page<ReservaResponse> reservas = reservaService.getAllReservas(fecha, canchaId, clienteId, estado, pageable);
+        Page<ReservaResponse> reservas = reservaService.getAllReservas(fecha, canchaId, clienteId, sucursalId, estado, pageable);
         return ResponseEntity.ok(reservas);
     }
 

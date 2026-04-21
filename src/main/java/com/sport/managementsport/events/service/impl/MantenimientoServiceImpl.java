@@ -1,6 +1,6 @@
 package com.sport.managementsport.events.service.impl;
 
-import com.sport.managementsport.booking.repository.ReservaRepository;
+import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoMantenimiento;
 import com.sport.managementsport.company.domain.Cancha;
 import com.sport.managementsport.company.service.CanchaService;
@@ -13,7 +13,7 @@ import com.sport.managementsport.events.repository.MantenimientoRepository;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class MantenimientoServiceImpl implements MantenimientoService {
 
     private final MantenimientoRepository mantenimientoRepository;
     private final CanchaService canchaService;
-    private final ReservaRepository reservaRepository;
+    private final ReservaService reservaService;
+
+    public MantenimientoServiceImpl(MantenimientoRepository mantenimientoRepository, CanchaService canchaService, @Lazy ReservaService reservaService) {
+        this.mantenimientoRepository = mantenimientoRepository;
+        this.canchaService = canchaService;
+        this.reservaService = reservaService;
+    }
 
     @Override
     @Transactional
@@ -42,9 +47,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
             throw new BusinessRuleException("El horario seleccionado se solapa con otro mantenimiento.");
         }
 
-        List<com.sport.managementsport.booking.domain.Reserva> conflictingReservas = reservaRepository.findConflictingReservas(
-                request.getCanchaId(), request.getHoraInicio().toLocalDate(), request.getHoraInicio().toLocalTime(), request.getHoraFin().toLocalTime());
-        if (!conflictingReservas.isEmpty()) {
+        if (!reservaService.findConflictingReservas(request.getCanchaId(), request.getHoraInicio(), request.getHoraFin()).isEmpty()) {
             throw new BusinessRuleException("El horario seleccionado se solapa con una reserva existente.");
         }
 

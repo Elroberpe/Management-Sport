@@ -3,8 +3,8 @@ package com.sport.managementsport.identity.service.impl;
 import com.sport.managementsport.common.enums.RolUsuario;
 import com.sport.managementsport.company.domain.Empresa;
 import com.sport.managementsport.company.domain.Sucursal;
-import com.sport.managementsport.company.repository.EmpresaRepository;
-import com.sport.managementsport.company.repository.SucursalRepository;
+import com.sport.managementsport.company.service.EmpresaService;
+import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.dto.ChangePasswordRequest;
 import com.sport.managementsport.identity.dto.CreateUsuarioRequest;
@@ -16,6 +16,7 @@ import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.DuplicateResourceException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,13 +28,19 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final EmpresaRepository empresaRepository;
-    private final SucursalRepository sucursalRepository;
+    private final EmpresaService empresaService;
+    private final SucursalService sucursalService;
     private final PasswordEncoder passwordEncoder;
+
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, @Lazy EmpresaService empresaService, @Lazy SucursalService sucursalService, PasswordEncoder passwordEncoder) {
+        this.usuarioRepository = usuarioRepository;
+        this.empresaService = empresaService;
+        this.sucursalService = sucursalService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional
@@ -45,13 +52,11 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new BusinessRuleException("La sucursal es obligatoria para los roles ADMIN y RECEPCIONISTA.");
         }
 
-        Empresa empresa = empresaRepository.findById(request.getEmpresaId())
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + request.getEmpresaId()));
+        Empresa empresa = empresaService.findEmpresaEntityById(request.getEmpresaId());
 
         Sucursal sucursal = null;
         if (request.getSucursalId() != null) {
-            sucursal = sucursalRepository.findById(request.getSucursalId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Sucursal no encontrada con id: " + request.getSucursalId()));
+            sucursal = sucursalService.findSucursalEntityById(request.getSucursalId());
         }
 
         Usuario usuario = new Usuario();
@@ -84,8 +89,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public UsuarioResponse updateUsuario(Integer id, UpdateUsuarioRequest request) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        Usuario usuario = findUsuarioEntityById(id);
 
         if (request.getUsername() != null) {
             validateUsernameUniqueness(request.getUsername(), id);
@@ -108,8 +112,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void changePassword(Integer id, ChangePasswordRequest request) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        Usuario usuario = findUsuarioEntityById(id);
 
         if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
             throw new BusinessRuleException("La contraseña actual es incorrecta.");
@@ -131,7 +134,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public List<UsuarioResponse> getUsuariosBySucursalId(Integer sucursalId) {
-        if (!sucursalRepository.existsById(sucursalId)) {
+        if (!sucursalService.sucursalExists(sucursalId)) {
             throw new ResourceNotFoundException("Sucursal no encontrada con id: " + sucursalId);
         }
         return usuarioRepository.findBySucursalSucursalId(sucursalId).stream()
