@@ -23,12 +23,14 @@ public interface ReservaService {
     ReservaResponse addPago(Integer reservaId, AddPagoToReservaRequest request);
     ReservaResponse cancelReserva(Integer id, CancelReservaRequest request);
     ReservaResponse reprogramarReserva(Integer id, ReprogramarReservaRequest request);
+    ReservaResponse registrarReembolsoManual(Integer reservaId, CreateReembolsoRequest request);
     void deleteReserva(Integer id);
 
     // --- Métodos para uso interno entre servicios ---
     List<Reserva> findConflictingReservas(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime);
     void validateHorarioDisponible(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime);
     void validateHorarioDisponible(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer eventoIdToIgnore);
+    void validateHorarioDisponibleIgnoringSelf(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer reservaIdToIgnore);
     Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDateTime startDateTime, LocalDateTime endDateTime, Evento evento);
     void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado);
 }

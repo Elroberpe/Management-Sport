@@ -42,7 +42,7 @@ public class ReservaController {
             @RequestParam(required = false) LocalDate fecha,
             @RequestParam(required = false) Integer canchaId,
             @RequestParam(required = false) Integer clienteId,
-            @RequestParam(required = false) Integer sucursalId, // <-- Nuevo parámetro
+            @RequestParam(required = false) Integer sucursalId,
             @RequestParam(required = false) EstadoReserva estado,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
         Page<ReservaResponse> reservas = reservaService.getAllReservas(fecha, canchaId, clienteId, sucursalId, estado, pageable);
@@ -77,6 +77,14 @@ public class ReservaController {
     public ResponseEntity<ReservaResponse> reprogramarReserva(@PathVariable Integer id, @Valid @RequestBody ReprogramarReservaRequest request) {
         ReservaResponse nuevaReserva = reservaService.reprogramarReserva(id, request);
         return ResponseEntity.ok(nuevaReserva);
+    }
+
+    @PostMapping("/{id}/reembolsos")
+    public ResponseEntity<ReservaResponse> registrarReembolsoManual(
+            @PathVariable Integer id,
+            @Valid @RequestBody CreateReembolsoRequest request) {
+        ReservaResponse reservaActualizada = reservaService.registrarReembolsoManual(id, request);
+        return ResponseEntity.ok(reservaActualizada);
     }
 
     @DeleteMapping("/{id}")

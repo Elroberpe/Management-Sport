@@ -65,6 +65,11 @@ public class ReservaServiceImpl implements ReservaService {
     public ReservaResponse createReserva(CreateReservaRequest request) {
         LocalDateTime startDateTime = request.getFecha().atTime(request.getHoraInicio());
         LocalDateTime endDateTime = request.getFecha().atTime(request.getHoraFin());
+
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new BusinessRuleException("No se puede crear una reserva para una fecha u hora pasada.");
+        }
+
         this.validateHorarioDisponible(request.getCanchaId(), startDateTime, endDateTime);
 
         Cancha cancha = canchaService.findCanchaEntityById(request.getCanchaId());
@@ -226,7 +231,7 @@ public class ReservaServiceImpl implements ReservaService {
         Cancha cancha = reservaOriginal.getCancha();
         LocalDateTime newStartDateTime = request.getNuevaFecha().atTime(request.getNuevaHoraInicio());
         LocalDateTime newEndDateTime = request.getNuevaFecha().atTime(request.getNuevaHoraFin());
-        validateHorarioDisponible(cancha.getCanchaId(), newStartDateTime, newEndDateTime);
+        validateHorarioDisponibleIgnoringSelf(cancha.getCanchaId(), newStartDateTime, newEndDateTime, id);
 
         long newMinutes = Duration.between(request.getNuevaHoraInicio(), request.getNuevaHoraFin()).toMinutes();
         BigDecimal newHours = BigDecimal.valueOf(newMinutes / 60.0);
@@ -260,6 +265,38 @@ public class ReservaServiceImpl implements ReservaService {
         reservaRepository.save(reservaOriginal);
 
         return toReservaResponse(savedNuevaReserva);
+    }
+
+    @Override
+    @Transactional
+    public ReservaResponse registrarReembolsoManual(Integer reservaId, CreateReembolsoRequest request) {
+        Reserva reserva = reservaRepository.findById(reservaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservaId));
+
+        if (reserva.getSaldoPendiente().compareTo(BigDecimal.ZERO) >= 0) {
+            throw new BusinessRuleException("Esta reserva no tiene un crédito a favor para reembolsar.");
+        }
+
+        BigDecimal creditoDisponible = reserva.getSaldoPendiente().abs();
+
+        if (request.getMonto().compareTo(creditoDisponible) > 0) {
+            throw new BusinessRuleException("El monto a reembolsar (" + request.getMonto() +
+                                            ") no puede ser mayor que el crédito disponible (" + creditoDisponible + ").");
+        }
+
+        pagoService.createPago(CreatePagoRequest.builder()
+                .reserva(reserva)
+                .monto(request.getMonto())
+                .metodoPago(request.getMetodoPago())
+                .tipoTransaccion(TipoTransaccion.SALIDA)
+                .nota(request.getNota() != null ? request.getNota() : "Reembolso manual de crédito.")
+                .build());
+
+        reserva.setMontoPagado(reserva.getMontoPagado().subtract(request.getMonto()));
+        reserva.setSaldoPendiente(reserva.getSaldoPendiente().add(request.getMonto()));
+
+        Reserva reservaActualizada = reservaRepository.save(reserva);
+        return toReservaResponse(reservaActualizada);
     }
 
     @Override
@@ -312,6 +349,16 @@ public class ReservaServiceImpl implements ReservaService {
             throw new BusinessRuleException("El horario se solapa con un mantenimiento.");
         }
         if (!findConflictingReservas(canchaId, startDateTime, endDateTime).isEmpty()) {
+            throw new BusinessRuleException("El horario se solapa con una reserva existente.");
+        }
+    }
+    
+    @Override
+    public void validateHorarioDisponibleIgnoringSelf(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer reservaIdToIgnore) {
+        if (!mantenimientoService.findConflictingMantenimientos(canchaId, startDateTime, endDateTime).isEmpty()) {
+            throw new BusinessRuleException("El horario se solapa con un mantenimiento.");
+        }
+        if (!reservaRepository.findConflictingReservasIgnoringSelf(canchaId, startDateTime, endDateTime, reservaIdToIgnore).isEmpty()) {
             throw new BusinessRuleException("El horario se solapa con una reserva existente.");
         }
     }
