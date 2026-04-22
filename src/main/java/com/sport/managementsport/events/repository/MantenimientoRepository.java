@@ -1,5 +1,6 @@
 package com.sport.managementsport.events.repository;
 
+import com.sport.managementsport.common.enums.EstadoMantenimiento;
 import com.sport.managementsport.events.domain.Mantenimiento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -29,4 +30,8 @@ public interface MantenimientoRepository extends JpaRepository<Mantenimiento, In
     );
 
     List<Mantenimiento> findByCanchaCanchaId(Integer canchaId);
+
+    List<Mantenimiento> findByEstadoMantenimientoAndHoraInicioBefore(EstadoMantenimiento estado, LocalDateTime ahora);
+
+    List<Mantenimiento> findByEstadoMantenimientoAndHoraFinBefore(EstadoMantenimiento estado, LocalDateTime ahora);
 }

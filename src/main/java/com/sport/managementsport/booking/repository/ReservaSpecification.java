@@ -11,9 +11,19 @@ import java.time.LocalDate;
 
 public class ReservaSpecification {
 
-    public static Specification<Reserva> fechaEquals(LocalDate fecha) {
-        return (root, query, criteriaBuilder) ->
-                fecha == null ? criteriaBuilder.conjunction() : criteriaBuilder.equal(root.get("fecha"), fecha);
+    public static Specification<Reserva> fechaBetween(LocalDate fechaDesde, LocalDate fechaHasta) {
+        return (root, query, cb) -> {
+            if (fechaDesde != null && fechaHasta != null) {
+                return cb.between(root.get("fecha"), fechaDesde, fechaHasta);
+            }
+            if (fechaDesde != null) {
+                return cb.greaterThanOrEqualTo(root.get("fecha"), fechaDesde);
+            }
+            if (fechaHasta != null) {
+                return cb.lessThanOrEqualTo(root.get("fecha"), fechaHasta);
+            }
+            return cb.conjunction();
+        };
     }
 
     public static Specification<Reserva> canchaIdEquals(Integer canchaId) {
@@ -36,7 +46,6 @@ public class ReservaSpecification {
             if (sucursalId == null) {
                 return criteriaBuilder.conjunction();
             }
-            // Join: Reserva -> Cancha -> Sucursal
             Join<Reserva, Cancha> canchaJoin = root.join("cancha");
             Join<Cancha, Sucursal> sucursalJoin = canchaJoin.join("sucursal");
             return criteriaBuilder.equal(sucursalJoin.get("sucursalId"), sucursalId);

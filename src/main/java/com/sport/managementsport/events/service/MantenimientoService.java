@@ -20,6 +20,7 @@ public interface MantenimientoService {
     MantenimientoResponse updateMantenimiento(Integer id, UpdateMantenimientoRequest request);
     MantenimientoResponse updateEstado(Integer id, UpdateEstadoMantenimientoRequest request);
     MantenimientoResponse cancelarMantenimiento(Integer id);
+    void actualizarEstadosDeMantenimientos();
 
     // Métodos para uso interno
     List<Mantenimiento> findConflictingMantenimientos(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin);

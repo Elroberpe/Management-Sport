@@ -39,13 +39,14 @@ public class ReservaController {
 
     @GetMapping
     public ResponseEntity<Page<ReservaResponse>> getAllReservas(
-            @RequestParam(required = false) LocalDate fecha,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Integer canchaId,
             @RequestParam(required = false) Integer clienteId,
             @RequestParam(required = false) Integer sucursalId,
             @RequestParam(required = false) EstadoReserva estado,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
-        Page<ReservaResponse> reservas = reservaService.getAllReservas(fecha, canchaId, clienteId, sucursalId, estado, pageable);
+        Page<ReservaResponse> reservas = reservaService.getAllReservas(fechaDesde, fechaHasta, canchaId, clienteId, sucursalId, estado, pageable);
         return ResponseEntity.ok(reservas);
     }
 

@@ -18,7 +18,7 @@ public interface ReservaService {
     // --- Métodos para la API pública (usados por ReservaController) ---
     ReservaResponse createReserva(CreateReservaRequest request);
     ReservaResponse getReservaById(Integer id);
-    Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable);
+    Page<ReservaResponse> getAllReservas(LocalDate fechaDesde, LocalDate fechaHasta, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable);
     ReservaResponse updateReserva(Integer id, UpdateReservaRequest request);
     ReservaResponse addPago(Integer reservaId, AddPagoToReservaRequest request);
     ReservaResponse cancelReserva(Integer id, CancelReservaRequest request);

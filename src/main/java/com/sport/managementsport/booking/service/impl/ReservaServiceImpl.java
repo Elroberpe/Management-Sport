@@ -111,8 +111,8 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ReservaResponse> getAllReservas(LocalDate fecha, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable) {
-        Specification<Reserva> spec = Specification.where(ReservaSpecification.fechaEquals(fecha))
+    public Page<ReservaResponse> getAllReservas(LocalDate fechaDesde, LocalDate fechaHasta, Integer canchaId, Integer clienteId, Integer sucursalId, EstadoReserva estado, Pageable pageable) {
+        Specification<Reserva> spec = Specification.where(ReservaSpecification.fechaBetween(fechaDesde, fechaHasta))
                 .and(ReservaSpecification.canchaIdEquals(canchaId))
                 .and(ReservaSpecification.clienteIdEquals(clienteId))
                 .and(ReservaSpecification.sucursalIdEquals(sucursalId))

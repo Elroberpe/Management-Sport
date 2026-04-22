@@ -15,12 +15,20 @@ paths:
       summary: "Listar y filtrar reservas"
       description: "Obtiene una lista paginada de reservas, con filtros opcionales."
       parameters:
-        - name: fecha
+        - name: fechaDesde
           in: query
+          description: "Fecha de inicio del rango de búsqueda (inclusivo)."
           schema:
             type: string
             format: date
             example: "2024-10-28"
+        - name: fechaHasta
+          in: query
+          description: "Fecha de fin del rango de búsqueda (inclusivo)."
+          schema:
+            type: string
+            format: date
+            example: "2024-10-30"
         - name: canchaId
           in: query
           schema:
@@ -64,7 +72,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ReservaResponse'
-  /reservas/{id}:
+  gi/reservas/{id}:
     parameters:
       - $ref: '#/components/parameters/ReservaId'
     get:

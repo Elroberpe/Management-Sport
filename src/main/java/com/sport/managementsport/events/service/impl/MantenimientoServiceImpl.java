@@ -14,10 +14,13 @@ import com.sport.managementsport.events.repository.MantenimientoSpecification;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 @Service
 public class MantenimientoServiceImpl implements MantenimientoService {
 
+    private static final Logger log = LoggerFactory.getLogger(MantenimientoServiceImpl.class);
     private final MantenimientoRepository mantenimientoRepository;
     private final CanchaService canchaService;
     private final ReservaService reservaService;
@@ -147,6 +151,34 @@ public class MantenimientoServiceImpl implements MantenimientoService {
         mantenimiento.setEstadoMantenimiento(EstadoMantenimiento.CANCELADO);
         Mantenimiento updated = mantenimientoRepository.save(mantenimiento);
         return toMantenimientoResponse(updated);
+    }
+
+    @Override
+    @Scheduled(cron = "0 */5 * * * *") // Se ejecuta cada 5 minutos
+    @Transactional
+    public void actualizarEstadosDeMantenimientos() {
+        log.info("Iniciando tarea programada: Actualizando estados de mantenimientos...");
+        LocalDateTime ahora = LocalDateTime.now();
+
+        List<Mantenimiento> mantenimientosAIniciar = mantenimientoRepository.findByEstadoMantenimientoAndHoraInicioBefore(EstadoMantenimiento.PROGRAMADO, ahora);
+        if (!mantenimientosAIniciar.isEmpty()) {
+            log.info("Se encontraron {} mantenimientos programados para iniciar.", mantenimientosAIniciar.size());
+            for (Mantenimiento mantenimiento : mantenimientosAIniciar) {
+                mantenimiento.setEstadoMantenimiento(EstadoMantenimiento.EN_PROCESO);
+                mantenimientoRepository.save(mantenimiento);
+            }
+        }
+
+        List<Mantenimiento> mantenimientosACompletar = mantenimientoRepository.findByEstadoMantenimientoAndHoraFinBefore(EstadoMantenimiento.EN_PROCESO, ahora);
+        if (!mantenimientosACompletar.isEmpty()) {
+            log.info("Se encontraron {} mantenimientos en proceso para marcar como completados.", mantenimientosACompletar.size());
+            for (Mantenimiento mantenimiento : mantenimientosACompletar) {
+                mantenimiento.setEstadoMantenimiento(EstadoMantenimiento.COMPLETADO);
+                mantenimientoRepository.save(mantenimiento);
+            }
+        }
+
+        log.info("Tarea de actualización de estados de mantenimientos finalizada.");
     }
 
     @Override
