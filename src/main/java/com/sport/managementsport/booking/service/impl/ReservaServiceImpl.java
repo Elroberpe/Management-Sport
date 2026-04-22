@@ -41,6 +41,9 @@ import java.util.List;
 public class ReservaServiceImpl implements ReservaService {
 
     private static final Logger log = LoggerFactory.getLogger(ReservaServiceImpl.class);
+    private static final long HORAS_LIMITE_REEMBOLSO_COMPLETO = 3;
+    private static final BigDecimal PORCENTAJE_PENALIDAD = new BigDecimal("0.30");
+
     private final ReservaRepository reservaRepository;
     private final CanchaService canchaService;
     private final ClienteService clienteService;
@@ -169,19 +172,42 @@ public class ReservaServiceImpl implements ReservaService {
             throw new BusinessRuleException("La reserva ya está en un estado final y no puede ser cancelada.");
         }
 
-        if (reserva.getMontoPagado().compareTo(BigDecimal.ZERO) > 0) {
-            pagoService.createPago(CreatePagoRequest.builder()
-                    .reserva(reserva)
-                    .monto(reserva.getMontoPagado())
-                    .metodoPago(reserva.getPagos().isEmpty() ? null : reserva.getPagos().get(0).getMetodoPago())
-                    .tipoTransaccion(TipoTransaccion.SALIDA)
-                    .nota("Reembolso por cancelación de reserva #" + id)
-                    .build());
-            reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
-        } else {
+        if (reserva.getMontoPagado().compareTo(BigDecimal.ZERO) <= 0) {
             reserva.setEstadoReserva(EstadoReserva.CANCELADO);
+            reserva.setMotivoCancelacion(request.getMotivo());
+            Reserva updatedReserva = reservaRepository.save(reserva);
+            return toReservaResponse(updatedReserva);
         }
 
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime inicioReserva = reserva.getFecha().atTime(reserva.getHoraInicio());
+        long horasRestantes = Duration.between(ahora, inicioReserva).toHours();
+
+        BigDecimal montoAReembolsar;
+
+        if (horasRestantes >= HORAS_LIMITE_REEMBOLSO_COMPLETO) {
+            montoAReembolsar = reserva.getMontoPagado();
+        } else {
+            BigDecimal montoPenalidad = reserva.getMontoTotal().multiply(PORCENTAJE_PENALIDAD);
+            BigDecimal montoCubiertoPorCliente = reserva.getMontoPagado();
+            
+            montoAReembolsar = montoCubiertoPorCliente.subtract(montoPenalidad);
+            if (montoAReembolsar.compareTo(BigDecimal.ZERO) < 0) {
+                montoAReembolsar = BigDecimal.ZERO;
+            }
+        }
+
+        if (montoAReembolsar.compareTo(BigDecimal.ZERO) > 0) {
+            pagoService.createPago(CreatePagoRequest.builder()
+                    .reserva(reserva)
+                    .monto(montoAReembolsar)
+                    .metodoPago(reserva.getPagos().isEmpty() ? null : reserva.getPagos().get(0).getMetodoPago())
+                    .tipoTransaccion(TipoTransaccion.SALIDA)
+                    .nota("Reembolso por cancelación con política aplicada. Horas restantes: " + horasRestantes)
+                    .build());
+        }
+
+        reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
         reserva.setMotivoCancelacion(request.getMotivo());
         Reserva updatedReserva = reservaRepository.save(reserva);
         return toReservaResponse(updatedReserva);
