@@ -5,6 +5,7 @@ import com.sport.managementsport.common.domain.AuditableEntity;
 import com.sport.managementsport.common.enums.EstadoEvento;
 import com.sport.managementsport.common.enums.TipoEvento;
 import com.sport.managementsport.company.domain.Sucursal;
+import com.sport.managementsport.finance.domain.Pago;
 import com.sport.managementsport.identity.domain.Cliente;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,9 @@ public class Evento extends AuditableEntity {
 
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventoHorario> horarios = new ArrayList<>();
+
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
+    private List<Pago> pagos = new ArrayList<>();
 
     @Column(nullable = false, length = 150)
     private String nombre;

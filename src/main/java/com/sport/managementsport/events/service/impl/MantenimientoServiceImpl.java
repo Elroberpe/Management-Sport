@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,9 +44,7 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     public MantenimientoResponse createMantenimiento(CreateMantenimientoRequest request) {
         Cancha cancha = canchaService.findCanchaEntityById(request.getCanchaId());
 
-        List<Mantenimiento> conflictingMantenimientos = mantenimientoRepository.findConflictingMantenimientos(
-                request.getCanchaId(), request.getHoraInicio(), request.getHoraFin());
-        if (!conflictingMantenimientos.isEmpty()) {
+        if (!findConflictingMantenimientos(request.getCanchaId(), request.getHoraInicio(), request.getHoraFin()).isEmpty()) {
             throw new BusinessRuleException("El horario seleccionado se solapa con otro mantenimiento.");
         }
 
@@ -100,6 +99,21 @@ public class MantenimientoServiceImpl implements MantenimientoService {
             throw new BusinessRuleException("No se puede modificar un mantenimiento completado o cancelado.");
         }
 
+        boolean horarioCambiado = (request.getHoraInicio() != null && !Objects.equals(request.getHoraInicio(), mantenimiento.getHoraInicio())) ||
+                                (request.getHoraFin() != null && !Objects.equals(request.getHoraFin(), mantenimiento.getHoraFin()));
+
+        if (horarioCambiado) {
+            LocalDateTime nuevaHoraInicio = request.getHoraInicio() != null ? request.getHoraInicio() : mantenimiento.getHoraInicio();
+            LocalDateTime nuevaHoraFin = request.getHoraFin() != null ? request.getHoraFin() : mantenimiento.getHoraFin();
+
+            if (!findConflictingMantenimientosIgnoringSelf(mantenimiento.getCancha().getCanchaId(), nuevaHoraInicio, nuevaHoraFin, id).isEmpty()) {
+                throw new BusinessRuleException("El nuevo horario se solapa con otro mantenimiento.");
+            }
+            if (!reservaService.findConflictingReservas(mantenimiento.getCancha().getCanchaId(), nuevaHoraInicio, nuevaHoraFin).isEmpty()) {
+                throw new BusinessRuleException("El nuevo horario se solapa con una reserva existente.");
+            }
+        }
+
         if (request.getHoraInicio() != null) mantenimiento.setHoraInicio(request.getHoraInicio());
         if (request.getHoraFin() != null) mantenimiento.setHoraFin(request.getHoraFin());
         if (request.getTipoMantenimiento() != null) mantenimiento.setTipoMantenimiento(request.getTipoMantenimiento());
@@ -139,6 +153,12 @@ public class MantenimientoServiceImpl implements MantenimientoService {
     @Transactional(readOnly = true)
     public List<Mantenimiento> findConflictingMantenimientos(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin) {
         return mantenimientoRepository.findConflictingMantenimientos(canchaId, horaInicio, horaFin);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Mantenimiento> findConflictingMantenimientosIgnoringSelf(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin, Integer mantenimientoIdToIgnore) {
+        return mantenimientoRepository.findConflictingMantenimientosIgnoringSelf(canchaId, horaInicio, horaFin, mantenimientoIdToIgnore);
     }
 
     private MantenimientoResponse toMantenimientoResponse(Mantenimiento mantenimiento) {

@@ -20,5 +20,13 @@ public interface MantenimientoRepository extends JpaRepository<Mantenimiento, In
             @Param("horaFin") LocalDateTime horaFin
     );
 
+    @Query("SELECT m FROM Mantenimiento m WHERE m.cancha.canchaId = :canchaId AND m.mantenimientoId <> :mantenimientoIdToIgnore AND m.horaInicio < :horaFin AND m.horaFin > :horaInicio AND m.estadoMantenimiento <> 'CANCELADO'")
+    List<Mantenimiento> findConflictingMantenimientosIgnoringSelf(
+            @Param("canchaId") Integer canchaId,
+            @Param("horaInicio") LocalDateTime horaInicio,
+            @Param("horaFin") LocalDateTime horaFin,
+            @Param("mantenimientoIdToIgnore") Integer mantenimientoIdToIgnore
+    );
+
     List<Mantenimiento> findByCanchaCanchaId(Integer canchaId);
 }

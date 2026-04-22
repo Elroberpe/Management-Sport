@@ -39,7 +39,7 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.updateEvento(id, request));
     }
 
-    @PatchMapping("/{id}/cancelar")
+    @PostMapping("/{id}/cancelar")
     public ResponseEntity<EventoResponse> cancelarEvento(@PathVariable Integer id, @Valid @RequestBody CancelEventoRequest request) {
         return ResponseEntity.ok(eventoService.cancelarEvento(id, request));
     }

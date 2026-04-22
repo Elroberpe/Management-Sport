@@ -1,9 +1,9 @@
 package com.sport.managementsport.events.service.impl;
 
 import com.sport.managementsport.booking.domain.Reserva;
-import com.sport.managementsport.booking.dto.CancelReservaRequest;
 import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoEvento;
+import com.sport.managementsport.common.enums.EstadoReserva;
 import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.domain.Sucursal;
 import com.sport.managementsport.company.service.SucursalService;
@@ -61,6 +61,7 @@ public class EventoServiceImpl implements EventoService {
         evento.setDescripcion(request.getDescripcion());
         evento.setTipoEvento(request.getTipoEvento());
         evento.setMontoPactado(request.getMontoPactado());
+        evento.setMontoPagado(BigDecimal.ZERO);
         evento.setSaldoPendiente(request.getMontoPactado());
         evento.setFechaInicio(request.getFechaInicio());
         evento.setFechaFin(request.getFechaFin());
@@ -140,12 +141,30 @@ public class EventoServiceImpl implements EventoService {
             throw new BusinessRuleException("El evento ya está en un estado final.");
         }
 
-        evento.setEstado(EstadoEvento.CANCELADO);
-
-        for (Reserva reserva : evento.getReservas()) {
-            reservaService.cancelReserva(reserva.getReservaId(), new CancelReservaRequest("Cancelado por cancelación del evento principal: " + evento.getNombre()));
+        if (request.getMontoReembolso().compareTo(evento.getMontoPagado()) > 0) {
+            throw new BusinessRuleException("El monto a reembolsar no puede ser mayor que el monto total pagado (" + evento.getMontoPagado() + ").");
         }
 
+        if (request.getMontoReembolso().compareTo(BigDecimal.ZERO) > 0) {
+            pagoService.createPago(CreatePagoRequest.builder()
+                    .evento(evento)
+                    .monto(request.getMontoReembolso())
+                    .tipoTransaccion(TipoTransaccion.SALIDA)
+                    .nota(request.getNotaReembolso() != null ? request.getNotaReembolso() : "Reembolso por cancelación de evento.")
+                    .metodoPago(evento.getPagos().stream().findFirst().map(p -> p.getMetodoPago()).orElse(null))
+                    .build());
+        }
+
+        evento.setMontoPagado(evento.getMontoPagado().subtract(request.getMontoReembolso()));
+        evento.setSaldoPendiente(evento.getSaldoPendiente().add(request.getMontoReembolso()));
+
+        for (Reserva reserva : evento.getReservas()) {
+            reserva.setEstadoReserva(EstadoReserva.CANCELADO);
+            reserva.setMotivoCancelacion("Evento principal cancelado: " + evento.getNombre());
+        }
+
+        evento.setEstado(EstadoEvento.CANCELADO);
+        
         Evento updatedEvento = eventoRepository.save(evento);
         return toEventoResponse(updatedEvento);
     }

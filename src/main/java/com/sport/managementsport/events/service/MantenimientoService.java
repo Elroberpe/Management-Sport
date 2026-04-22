@@ -21,6 +21,7 @@ public interface MantenimientoService {
     MantenimientoResponse updateEstado(Integer id, UpdateEstadoMantenimientoRequest request);
     MantenimientoResponse cancelarMantenimiento(Integer id);
 
-    // Método para uso interno
+    // Métodos para uso interno
     List<Mantenimiento> findConflictingMantenimientos(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin);
+    List<Mantenimiento> findConflictingMantenimientosIgnoringSelf(Integer canchaId, LocalDateTime horaInicio, LocalDateTime horaFin, Integer mantenimientoIdToIgnore);
 }
