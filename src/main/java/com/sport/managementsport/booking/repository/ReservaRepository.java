@@ -1,12 +1,14 @@
 package com.sport.managementsport.booking.repository;
 
 import com.sport.managementsport.booking.domain.Reserva;
+import com.sport.managementsport.dashboard.dto.HorasOcupadasPorDia;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -51,4 +53,11 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("estado") String estado,
             @Param("currentDateTime") LocalDateTime currentDateTime
     );
+
+    @Query(value = "SELECT CAST(r.fecha AS DATE) as dia, SUM(DATEDIFF(minute, r.hora_inicio, r.hora_fin) / 60.0) as horasOcupadas " +
+                   "FROM Reserva r JOIN Cancha c ON r.cancha_id = c.cancha_id " +
+                   "WHERE c.sucursal_id = :sucursalId AND r.fecha BETWEEN :fechaDesde AND :fechaHasta " +
+                   "AND r.estado_reserva NOT IN ('CANCELADO', 'REEMBOLSADO') " +
+                   "GROUP BY CAST(r.fecha AS DATE)", nativeQuery = true)
+    List<HorasOcupadasPorDia> findHorasOcupadasPorSucursalYFechas(@Param("sucursalId") Integer sucursalId, @Param("fechaDesde") LocalDate fechaDesde, @Param("fechaHasta") LocalDate fechaHasta);
 }

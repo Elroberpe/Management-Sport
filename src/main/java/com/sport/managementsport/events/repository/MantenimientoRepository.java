@@ -1,6 +1,7 @@
 package com.sport.managementsport.events.repository;
 
 import com.sport.managementsport.common.enums.EstadoMantenimiento;
+import com.sport.managementsport.dashboard.dto.HorasOcupadasPorDia;
 import com.sport.managementsport.events.domain.Mantenimiento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,4 +36,11 @@ public interface MantenimientoRepository extends JpaRepository<Mantenimiento, In
     List<Mantenimiento> findByEstadoMantenimientoAndHoraInicioBefore(EstadoMantenimiento estado, LocalDateTime ahora);
 
     List<Mantenimiento> findByEstadoMantenimientoAndHoraFinBefore(EstadoMantenimiento estado, LocalDateTime ahora);
+
+    @Query(value = "SELECT CAST(m.hora_inicio AS DATE) as dia, SUM(DATEDIFF(minute, m.hora_inicio, m.hora_fin) / 60.0) as horasOcupadas " +
+                   "FROM Mantenimiento m JOIN Cancha c ON m.cancha_id = c.cancha_id " +
+                   "WHERE c.sucursal_id = :sucursalId AND CAST(m.hora_inicio AS DATE) BETWEEN :fechaDesde AND :fechaHasta " +
+                   "AND m.estado_mantenimiento <> 'CANCELADO' " +
+                   "GROUP BY CAST(m.hora_inicio AS DATE)", nativeQuery = true)
+    List<HorasOcupadasPorDia> findHorasOcupadasPorSucursalYFechas(@Param("sucursalId") Integer sucursalId, @Param("fechaDesde") LocalDate fechaDesde, @Param("fechaHasta") LocalDate fechaHasta);
 }

@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: "API de Dashboard y Reportes - Management-Sport"
+  description: "Endpoints para obtener datos agregados y de inteligencia de negocio."
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /dashboard/sucursales/{sucursalId}/disponibilidad-semanal:
+    get:
+      tags:
+        - Dashboard
+      summary: "Obtener disponibilidad de horas por día para una semana"
+      description: "Calcula el total de horas disponibles para reservar en una sucursal para cada día de una semana específica, descontando reservas y mantenimientos."
+      parameters:
+        - name: sucursalId
+          in: path
+          required: true
+          description: "ID de la sucursal a consultar."
+          schema:
+            type: integer
+        - name: fechaBase
+          in: query
+          description: "Una fecha cualquiera dentro de la semana que se desea consultar. Si se omite, se usa la fecha actual."
+          schema:
+            type: string
+            format: date
+            example: "2024-10-28"
+      responses:
+        '200':
+          description: "Lista de disponibilidad para los 7 días de la semana."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisponibilidadDiariaResponse'
+        '404':
+          description: "Sucursal no encontrada."
+
+components:
+  schemas:
+    DisponibilidadDiariaResponse:
+      type: object
+      properties:
+        dia:
+          type: string
+          example: "LUNES"
+        fecha:
+          type: string
+          format: date
+          example: "2024-10-28"
+        horasDisponibles:
+          type: number
+          format: double
+          example: 45.5

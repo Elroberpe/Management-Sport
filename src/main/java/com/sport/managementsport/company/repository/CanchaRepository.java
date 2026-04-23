@@ -1,5 +1,6 @@
 package com.sport.managementsport.company.repository;
 
+import com.sport.managementsport.common.enums.EstadoCancha;
 import com.sport.managementsport.company.domain.Cancha;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -12,4 +13,6 @@ public interface CanchaRepository extends JpaRepository<Cancha, Integer>, JpaSpe
     boolean existsBySucursalSucursalId(Integer sucursalId);
     boolean existsByNombreAndSucursalSucursalId(String nombre, Integer sucursalId);
     List<Cancha> findBySucursalSucursalId(Integer sucursalId);
+
+    long countBySucursal_SucursalIdAndEstadoCanchaNot(Integer sucursalId, EstadoCancha estado);
 }
