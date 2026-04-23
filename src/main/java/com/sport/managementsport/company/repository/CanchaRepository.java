@@ -15,4 +15,5 @@ public interface CanchaRepository extends JpaRepository<Cancha, Integer>, JpaSpe
     List<Cancha> findBySucursalSucursalId(Integer sucursalId);
 
     long countBySucursal_SucursalIdAndEstadoCanchaNot(Integer sucursalId, EstadoCancha estado);
+    long countByEstadoCanchaNot(EstadoCancha estado);
 }

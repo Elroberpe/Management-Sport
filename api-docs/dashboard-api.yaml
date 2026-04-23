@@ -40,6 +40,95 @@ paths:
         '404':
           description: "Sucursal no encontrada."
 
+  /dashboard/kpi/reservas-completadas-hoy:
+    get:
+      tags:
+        - Dashboard - KPIs
+      summary: "Obtener total de reservas completadas hoy"
+      description: "Devuelve el número total de reservas cuyo estado es 'COMPLETADO' y cuya fecha es la del día actual. Puede ser filtrado por sucursal."
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Total de reservas completadas hoy."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+
+  /dashboard/kpi/ingresos-anuales:
+    get:
+      tags:
+        - Dashboard - KPIs
+      summary: "Obtener total de ingresos en el año actual"
+      description: "Devuelve la suma total de todas las transacciones de tipo 'INGRESO' para el año en curso. Puede ser filtrado por sucursal."
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Total de ingresos del año."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+
+  /dashboard/kpi/tasa-ocupacion-mensual:
+    get:
+      tags:
+        - Dashboard - KPIs
+      summary: "Obtener la tasa de ocupación de los últimos 30 días"
+      description: "Calcula el porcentaje de horas ocupadas (por reservas y mantenimientos) sobre el total de horas disponibles de las canchas activas en los últimos 30 días. Puede ser filtrado por sucursal."
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Tasa de ocupación mensual."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+
+  /dashboard/graficos/actividad-reservas:
+    get:
+      tags:
+        - Dashboard - Gráficos
+      summary: "Obtener datos para el gráfico de actividad de reservas"
+      description: "Devuelve el número de reservas activas (Pendiente, Pagada, Completado) por día para un período determinado (semana o mes actual). Puede ser filtrado por sucursal."
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+        - name: periodo
+          in: query
+          description: "El período de tiempo para el gráfico."
+          schema:
+            type: string
+            enum: [SEMANA, MES]
+            default: MES
+      responses:
+        '200':
+          description: "Lista de puntos de datos para el gráfico."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActividadDiariaResponse'
+
 components:
   schemas:
     DisponibilidadDiariaResponse:
@@ -56,3 +145,21 @@ components:
           type: number
           format: double
           example: 45.5
+    KpiResponse:
+      type: object
+      properties:
+        total:
+          type: number
+          description: "El valor total del KPI solicitado. Para la tasa de ocupación, es un porcentaje."
+          example: 78.50
+    ActividadDiariaResponse:
+      type: object
+      properties:
+        fecha:
+          type: string
+          format: date
+          example: "2024-04-23"
+        cantidad:
+          type: integer
+          format: int64
+          example: 15

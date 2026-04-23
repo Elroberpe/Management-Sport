@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,4 +44,10 @@ public interface MantenimientoRepository extends JpaRepository<Mantenimiento, In
                    "AND m.estado_mantenimiento <> 'CANCELADO' " +
                    "GROUP BY CAST(m.hora_inicio AS DATE)", nativeQuery = true)
     List<HorasOcupadasPorDia> findHorasOcupadasPorSucursalYFechas(@Param("sucursalId") Integer sucursalId, @Param("fechaDesde") LocalDate fechaDesde, @Param("fechaHasta") LocalDate fechaHasta);
+
+    @Query(value = "SELECT COALESCE(SUM(DATEDIFF(minute, m.hora_inicio, m.hora_fin) / 60.0), 0) " +
+                   "FROM Mantenimiento m " +
+                   "WHERE CAST(m.hora_inicio AS DATE) BETWEEN :fechaDesde AND :fechaHasta " +
+                   "AND m.estado_mantenimiento <> 'CANCELADO'", nativeQuery = true)
+    BigDecimal sumHorasOcupadasByFechas(@Param("fechaDesde") LocalDate fechaDesde, @Param("fechaHasta") LocalDate fechaHasta);
 }
