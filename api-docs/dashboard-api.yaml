@@ -40,46 +40,6 @@ paths:
         '404':
           description: "Sucursal no encontrada."
 
-  /dashboard/kpi/reservas-completadas-hoy:
-    get:
-      tags:
-        - Dashboard - KPIs
-      summary: "Obtener total de reservas completadas hoy"
-      description: "Devuelve el número total de reservas cuyo estado es 'COMPLETADO' y cuya fecha es la del día actual. Puede ser filtrado por sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Total de reservas completadas hoy."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KpiResponse'
-
-  /dashboard/kpi/ingresos-anuales:
-    get:
-      tags:
-        - Dashboard - KPIs
-      summary: "Obtener total de ingresos en el año actual"
-      description: "Devuelve la suma total de todas las transacciones de tipo 'INGRESO' para el año en curso. Puede ser filtrado por sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Total de ingresos del año."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KpiResponse'
-
   /dashboard/kpi/tasa-ocupacion-mensual:
     get:
       tags:
@@ -129,6 +89,22 @@ paths:
                 items:
                   $ref: '#/components/schemas/ActividadDiariaResponse'
 
+  /dashboard/status-sedes:
+    get:
+      tags:
+        - Dashboard - Status
+      summary: "Obtener el status de canchas por cada sede"
+      description: "Devuelve una lista de todas las sedes, indicando para cada una el número total de canchas y cuántas de ellas están activas (no en estado INACTIVA)."
+      responses:
+        '200':
+          description: "Lista del status de todas las sedes."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SedeStatusResponse'
+
 components:
   schemas:
     DisponibilidadDiariaResponse:
@@ -163,3 +139,20 @@ components:
           type: integer
           format: int64
           example: 15
+    SedeStatusResponse:
+      type: object
+      properties:
+        sucursalId:
+          type: integer
+          example: 1
+        nombreSede:
+          type: string
+          example: "Sede Miraflores"
+        canchasTotales:
+          type: integer
+          format: int64
+          example: 10
+        canchasActivas:
+          type: integer
+          format: int64
+          example: 8

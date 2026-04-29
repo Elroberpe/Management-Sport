@@ -2,6 +2,7 @@ package com.sport.managementsport.finance.service;
 
 import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.common.enums.MetodoPago;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.finance.dto.AnularPagoRequest;
 import com.sport.managementsport.finance.dto.CreatePagoRequest;
 import com.sport.managementsport.finance.dto.PagoResponse;
@@ -17,6 +18,7 @@ public interface PagoService {
     PagoResponse getPagoById(Integer id);
     Page<PagoResponse> getAllPagos(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId, Pageable pageable);
     void anularPago(Integer id, AnularPagoRequest request);
+    KpiResponse getIngresosAnuales(Integer sucursalId);
 
     // Nuevo método para la reprogramación
     void reasignarPagos(Reserva reservaOriginal, Reserva nuevaReserva);

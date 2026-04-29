@@ -3,13 +3,8 @@ package com.sport.managementsport.dashboard.service.impl;
 import com.sport.managementsport.booking.repository.ReservaRepository;
 import com.sport.managementsport.common.enums.EstadoCancha;
 import com.sport.managementsport.common.enums.EstadoReserva;
-import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.repository.CanchaRepository;
-import com.sport.managementsport.dashboard.dto.ActividadDiariaResponse;
-import com.sport.managementsport.dashboard.dto.ActividadPorDia;
-import com.sport.managementsport.dashboard.dto.DisponibilidadDiariaResponse;
-import com.sport.managementsport.dashboard.dto.HorasOcupadasPorDia;
-import com.sport.managementsport.dashboard.dto.KpiResponse;
+import com.sport.managementsport.dashboard.dto.*;
 import com.sport.managementsport.dashboard.service.DashboardService;
 import com.sport.managementsport.events.repository.MantenimientoRepository;
 import com.sport.managementsport.finance.repository.PagoRepository;
@@ -20,7 +15,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.Year;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,29 +69,6 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return disponibilidadSemanal;
-    }
-
-    @Override
-    public KpiResponse getReservasCompletadasHoy(Integer sucursalId) {
-        long total;
-        if (sucursalId == null) {
-            total = reservaRepository.countByEstadoReservaAndFecha(EstadoReserva.COMPLETADO, LocalDate.now());
-        } else {
-            total = reservaRepository.countBySucursalAndEstadoAndFecha(sucursalId, EstadoReserva.COMPLETADO, LocalDate.now());
-        }
-        return new KpiResponse(total);
-    }
-
-    @Override
-    public KpiResponse getIngresosAnuales(Integer sucursalId) {
-        int currentYear = Year.now().getValue();
-        BigDecimal total;
-        if (sucursalId == null) {
-            total = pagoRepository.sumByTipoTransaccionAndYear(TipoTransaccion.INGRESO, currentYear);
-        } else {
-            total = pagoRepository.sumByTipoTransaccionAndYearAndSucursal(TipoTransaccion.INGRESO, currentYear, sucursalId);
-        }
-        return new KpiResponse(total);
     }
 
     @Override
@@ -168,5 +139,17 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return resultado;
+    }
+
+    @Override
+    public List<SedeStatusResponse> getSedesStatus() {
+        return canchaRepository.getSedesStatus().stream()
+                .map(proj -> new SedeStatusResponse(
+                        proj.getSucursalId(),
+                        proj.getNombreSede(),
+                        proj.getCanchasTotales(),
+                        proj.getCanchasActivas()
+                ))
+                .collect(Collectors.toList());
     }
 }

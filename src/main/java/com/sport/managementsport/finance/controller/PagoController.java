@@ -1,6 +1,7 @@
 package com.sport.managementsport.finance.controller;
 
 import com.sport.managementsport.common.enums.MetodoPago;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.finance.dto.AnularPagoRequest;
 import com.sport.managementsport.finance.dto.PagoResponse;
 import com.sport.managementsport.finance.service.PagoService;
@@ -26,7 +27,7 @@ public class PagoController {
             @RequestParam(required = false) LocalDate desde,
             @RequestParam(required = false) LocalDate hasta,
             @RequestParam(required = false) MetodoPago metodo,
-            @RequestParam(required = false) Integer sucursalId, // <-- Nuevo parámetro
+            @RequestParam(required = false) Integer sucursalId,
             @PageableDefault(size = 50, sort = "fecha") Pageable pageable) {
         Page<PagoResponse> pagos = pagoService.getAllPagos(desde, hasta, metodo, sucursalId, pageable);
         return ResponseEntity.ok(pagos);
@@ -41,5 +42,11 @@ public class PagoController {
     public ResponseEntity<Void> anularPago(@PathVariable Integer id, @Valid @RequestBody AnularPagoRequest request) {
         pagoService.anularPago(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stats/ingresos-anuales")
+    public ResponseEntity<KpiResponse> getIngresosAnuales(
+            @RequestParam(required = false) Integer sucursalId) {
+        return ResponseEntity.ok(pagoService.getIngresosAnuales(sucursalId));
     }
 }

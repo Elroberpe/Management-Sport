@@ -3,6 +3,7 @@ package com.sport.managementsport.booking.service;
 import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.booking.dto.*;
 import com.sport.managementsport.common.enums.EstadoReserva;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.events.domain.Evento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ public interface ReservaService {
     ReservaResponse reprogramarReserva(Integer id, ReprogramarReservaRequest request);
     ReservaResponse registrarReembolsoManual(Integer reservaId, CreateReembolsoRequest request);
     void deleteReserva(Integer id);
+    KpiResponse getReservasCompletadasHoy(Integer sucursalId);
 
     // --- Métodos para uso interno entre servicios ---
     List<Reserva> findConflictingReservas(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime);

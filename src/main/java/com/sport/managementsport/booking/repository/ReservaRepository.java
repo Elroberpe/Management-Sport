@@ -19,7 +19,7 @@ import java.util.List;
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaSpecificationExecutor<Reserva> {
 
-    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva <> 'CANCELADO' AND " +
+    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
                    "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
                    ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
            nativeQuery = true)
@@ -29,7 +29,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("endDateTime") LocalDateTime endDateTime
     );
 
-    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.reserva_id <> :reservaIdToIgnore AND r.estado_reserva <> 'CANCELADO' AND " +
+    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.reserva_id <> :reservaIdToIgnore AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
                    "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
                    ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
            nativeQuery = true)
@@ -40,7 +40,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("reservaIdToIgnore") Integer reservaIdToIgnore
     );
 
-    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva <> 'CANCELADO' AND " +
+    @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
                    "(r.evento_id IS NULL OR r.evento_id <> :eventoIdToIgnore) AND " +
                    "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
                    ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",

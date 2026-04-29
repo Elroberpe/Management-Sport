@@ -42,7 +42,7 @@ paths:
           description: "Filtra las reservas por la sucursal a la que pertenecen."
           schema:
             type: integer
-        - name: estado
+        - name: estadoReserva
           in: query
           schema:
             $ref: '#/components/schemas/EstadoReserva'
@@ -72,7 +72,28 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ReservaResponse'
-  gi/reservas/{id}:
+
+  /reservas/stats/completadas-hoy:
+    get:
+      tags:
+        - Reservas - Estadísticas
+      summary: "Obtener total de reservas completadas hoy"
+      description: "Devuelve el número total de reservas cuyo estado es 'COMPLETADO' y cuya fecha es la del día actual. Puede ser filtrado por sucursal."
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Total de reservas completadas hoy."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+
+  /reservas/{id}:
     parameters:
       - $ref: '#/components/parameters/ReservaId'
     get:
@@ -248,6 +269,13 @@ components:
     TipoTransaccion:
       type: string
       enum: [INGRESO, SALIDA]
+
+    KpiResponse:
+      type: object
+      properties:
+        total:
+          type: number
+          example: 25
 
     ReservaResponse:
       type: object

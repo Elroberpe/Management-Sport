@@ -3,12 +3,15 @@ package com.sport.managementsport.booking.controller;
 import com.sport.managementsport.booking.dto.*;
 import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoReserva;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.finance.dto.PagoResponse;
 import com.sport.managementsport.finance.service.PagoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/reservas")
@@ -44,9 +48,22 @@ public class ReservaController {
             @RequestParam(required = false) Integer canchaId,
             @RequestParam(required = false) Integer clienteId,
             @RequestParam(required = false) Integer sucursalId,
-            @RequestParam(required = false) EstadoReserva estado,
+            @RequestParam(name = "estadoReserva", required = false) EstadoReserva estado,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
-        Page<ReservaResponse> reservas = reservaService.getAllReservas(fechaDesde, fechaHasta, canchaId, clienteId, sucursalId, estado, pageable);
+
+        Sort sort = pageable.getSort();
+        List<Sort.Order> translatedOrders = sort.stream()
+                .map(order -> {
+                    if (order.getProperty().equalsIgnoreCase("id")) {
+                        return new Sort.Order(order.getDirection(), "reservaId");
+                    }
+                    return order;
+                })
+                .collect(Collectors.toList());
+        
+        Pageable translatedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(translatedOrders));
+
+        Page<ReservaResponse> reservas = reservaService.getAllReservas(fechaDesde, fechaHasta, canchaId, clienteId, sucursalId, estado, translatedPageable);
         return ResponseEntity.ok(reservas);
     }
 
@@ -86,6 +103,12 @@ public class ReservaController {
             @Valid @RequestBody CreateReembolsoRequest request) {
         ReservaResponse reservaActualizada = reservaService.registrarReembolsoManual(id, request);
         return ResponseEntity.ok(reservaActualizada);
+    }
+
+    @GetMapping("/stats/completadas-hoy")
+    public ResponseEntity<KpiResponse> getReservasCompletadasHoy(
+            @RequestParam(required = false) Integer sucursalId) {
+        return ResponseEntity.ok(reservaService.getReservasCompletadasHoy(sucursalId));
     }
 
     @DeleteMapping("/{id}")

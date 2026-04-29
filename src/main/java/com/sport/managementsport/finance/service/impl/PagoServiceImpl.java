@@ -1,8 +1,11 @@
 package com.sport.managementsport.finance.service.impl;
 
+import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.booking.service.ReservaService;
 import com.sport.managementsport.common.enums.EstadoPago;
 import com.sport.managementsport.common.enums.MetodoPago;
+import com.sport.managementsport.common.enums.TipoTransaccion;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.events.service.EventoService;
 import com.sport.managementsport.exception.BusinessRuleException;
 import com.sport.managementsport.exception.ResourceNotFoundException;
@@ -20,7 +23,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,6 +112,19 @@ public class PagoServiceImpl implements PagoService {
             pago.setReserva(nuevaReserva);
         }
         pagoRepository.saveAll(pagosOriginales);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public KpiResponse getIngresosAnuales(Integer sucursalId) {
+        int currentYear = Year.now().getValue();
+        BigDecimal total;
+        if (sucursalId == null) {
+            total = pagoRepository.sumByTipoTransaccionAndYear(TipoTransaccion.INGRESO, currentYear);
+        } else {
+            total = pagoRepository.sumByTipoTransaccionAndYearAndSucursal(TipoTransaccion.INGRESO, currentYear, sucursalId);
+        }
+        return new KpiResponse(total);
     }
 
     private PagoResponse toPagoResponse(Pago pago) {

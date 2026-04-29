@@ -11,6 +11,7 @@ import com.sport.managementsport.common.enums.TipoReserva;
 import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.company.domain.Cancha;
 import com.sport.managementsport.company.service.CanchaService;
+import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.events.domain.Evento;
 import com.sport.managementsport.events.service.MantenimientoService;
 import com.sport.managementsport.exception.BusinessRuleException;
@@ -203,16 +204,21 @@ public class ReservaServiceImpl implements ReservaService {
         }
 
         if (montoAReembolsar.compareTo(BigDecimal.ZERO) > 0) {
+            if (request.getMetodoPagoReembolso() == null) {
+                throw new BusinessRuleException("Se requiere el método de pago para el reembolso.");
+            }
             pagoService.createPago(CreatePagoRequest.builder()
                     .reserva(reserva)
                     .monto(montoAReembolsar)
-                    .metodoPago(reserva.getPagos().isEmpty() ? null : reserva.getPagos().get(0).getMetodoPago())
+                    .metodoPago(request.getMetodoPagoReembolso())
                     .tipoTransaccion(TipoTransaccion.SALIDA)
                     .nota("Reembolso por cancelación con política aplicada. Horas restantes: " + horasRestantes)
                     .build());
+            reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
+        } else {
+            reserva.setEstadoReserva(EstadoReserva.CANCELADO);
         }
 
-        reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
         reserva.setMotivoCancelacion(request.getMotivo());
         Reserva updatedReserva = reservaRepository.save(reserva);
         return toReservaResponse(updatedReserva);
@@ -411,6 +417,18 @@ public class ReservaServiceImpl implements ReservaService {
         }
         
         reservaRepository.save(reserva);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public KpiResponse getReservasCompletadasHoy(Integer sucursalId) {
+        long total;
+        if (sucursalId == null) {
+            total = reservaRepository.countByEstadoReservaAndFecha(EstadoReserva.COMPLETADO, LocalDate.now());
+        } else {
+            total = reservaRepository.countBySucursalAndEstadoAndFecha(sucursalId, EstadoReserva.COMPLETADO, LocalDate.now());
+        }
+        return new KpiResponse(total);
     }
 
     private ReservaResponse toReservaResponse(Reserva reserva) {
