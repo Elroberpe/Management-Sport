@@ -1,0 +1,230 @@
+-- =========================================================================
+-- 1. TABLAS NÚCLEO (CORE ENTITIES)
+-- =========================================================================
+
+CREATE TABLE Empresa (
+    empresa_id INT IDENTITY(1,1),
+    nombre_comercial VARCHAR(100) NOT NULL,
+    razon_social VARCHAR(100) NOT NULL,
+    logo_url VARCHAR(255),
+    email_contacto VARCHAR(100),
+    telefono_principal VARCHAR(12),
+    created_at DATETIME CONSTRAINT DF_Empresa_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+    
+    CONSTRAINT PK_Empresa PRIMARY KEY (empresa_id)
+);
+GO
+
+CREATE TABLE Sucursal (
+    sucursal_id INT IDENTITY(1,1),
+    empresa_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    direccion VARCHAR(250) NOT NULL,
+    telefono VARCHAR(12),
+    activo BIT CONSTRAINT DF_Sucursal_Activo DEFAULT 1,
+    created_at DATETIME CONSTRAINT DF_Sucursal_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Sucursal PRIMARY KEY (sucursal_id),
+    CONSTRAINT FK_Sucursal_Empresa FOREIGN KEY (empresa_id) REFERENCES Empresa(empresa_id)
+);
+GO
+
+CREATE TABLE Cancha (
+    cancha_id INT IDENTITY(1,1),
+    sucursal_id INT NOT NULL,
+    estado_cancha VARCHAR(20) NOT NULL CONSTRAINT DF_Cancha_Estado DEFAULT 'DISPONIBLE',
+    precio_hora NUMERIC(10,2) NOT NULL,
+    created_at DATETIME CONSTRAINT DF_Cancha_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Cancha PRIMARY KEY (cancha_id),
+    CONSTRAINT FK_Cancha_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
+    CONSTRAINT CK_Cancha_Estado CHECK (estado_cancha IN ('DISPONIBLE', 'MANTENIMIENTO', 'INACTIVA'))
+);
+GO
+
+-- =========================================================================
+-- 2. GESTIÓN DE USUARIOS Y CLIENTES
+-- =========================================================================
+
+CREATE TABLE Usuario (
+    usuario_id INT IDENTITY(1,1),
+    sucursal_id INT NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(250) NOT NULL,
+    rol VARCHAR(20) NOT NULL,
+    ultimo_login DATETIME,
+    created_at DATETIME CONSTRAINT DF_Usuario_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Usuario PRIMARY KEY (usuario_id),
+    CONSTRAINT FK_Usuario_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
+    CONSTRAINT UQ_Usuario_Username UNIQUE (username),
+    CONSTRAINT UQ_Usuario_Email UNIQUE (email),
+    CONSTRAINT CK_Usuario_Rol CHECK (rol IN ('SUPERADMIN', 'ADMIN', 'RECEPCIONISTA'))
+);
+GO
+
+CREATE TABLE Cliente (
+    cliente_id INT IDENTITY(1,1),
+    tip_documento VARCHAR(20) NOT NULL,
+    documento VARCHAR(30) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    telefono VARCHAR(12),
+    created_at DATETIME CONSTRAINT DF_Cliente_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Cliente PRIMARY KEY (cliente_id),
+    CONSTRAINT UQ_Cliente_Documento UNIQUE (documento),
+    CONSTRAINT CK_Cliente_TipDoc CHECK (tip_documento IN ('DNI', 'RUC', 'PASAPORTE'))
+);
+GO
+
+-- =========================================================================
+-- 3. EVENTOS Y MANTENIMIENTO
+-- =========================================================================
+
+CREATE TABLE Evento (
+    evento_id INT IDENTITY(1,1),
+    sucursal_id INT NOT NULL,
+    cliente_id INT NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion VARCHAR(MAX),
+    tipo_evento VARCHAR(20) NOT NULL,
+    monto_pactado NUMERIC(10,2),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    estado VARCHAR(20) NOT NULL CONSTRAINT DF_Evento_Estado DEFAULT 'PROGRAMADO',
+    created_at DATETIME CONSTRAINT DF_Evento_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Evento PRIMARY KEY (evento_id),
+    CONSTRAINT FK_Evento_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
+    CONSTRAINT FK_Evento_Cliente FOREIGN KEY (cliente_id) REFERENCES Cliente(cliente_id),
+    CONSTRAINT CK_Evento_Tipo CHECK (tipo_evento IN ('RELAMPAGO', 'TORNEO', 'CORPORATIVO')),
+    CONSTRAINT CK_Evento_Estado CHECK (estado IN ('PROGRAMADO', 'EN_CURSO', 'FINALIZADO', 'CANCELADO'))
+);
+GO
+
+CREATE TABLE evento_horario (
+    horario_id INT IDENTITY(1,1),
+    evento_id INT NOT NULL,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+
+    CONSTRAINT PK_EventoHorario PRIMARY KEY (horario_id),
+    CONSTRAINT FK_EventoHorario_Evento FOREIGN KEY (evento_id) REFERENCES Evento(evento_id) ON DELETE CASCADE
+);
+GO
+
+CREATE TABLE Mantenimiento (
+    mantenimiento_id INT IDENTITY(1,1),
+    cancha_id INT NOT NULL,
+    hora_inicio DATETIME NOT NULL,
+    hora_fin DATETIME NOT NULL,
+    tipo_mantenimiento VARCHAR(20) NOT NULL,
+    estado_mantenimiento VARCHAR(20) NOT NULL CONSTRAINT DF_Mantenimiento_Estado DEFAULT 'PROGRAMADO',
+    motivo VARCHAR(200),
+    created_at DATETIME CONSTRAINT DF_Mantenimiento_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Mantenimiento PRIMARY KEY (mantenimiento_id),
+    CONSTRAINT FK_Mantenimiento_Cancha FOREIGN KEY (cancha_id) REFERENCES Cancha(cancha_id) ON DELETE CASCADE,
+    CONSTRAINT CK_Mantenimiento_Tipo CHECK (tipo_mantenimiento IN ('PREVENTIVO', 'CORRECTIVO', 'URGENTE')),
+    CONSTRAINT CK_Mantenimiento_Estado CHECK (estado_mantenimiento IN ('PROGRAMADO', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO'))
+);
+GO
+
+-- =========================================================================
+-- 4. RESERVAS Y PAGOS (OPERACIONES CORE)
+-- =========================================================================
+
+CREATE TABLE Reserva (
+    reserva_id INT IDENTITY(1,1),
+    cancha_id INT NOT NULL,
+    cliente_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    evento_id INT NULL, 
+    tipo_reserva VARCHAR(20) NOT NULL CONSTRAINT DF_Reserva_Tipo DEFAULT 'REGULAR',
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    monto_total NUMERIC(10,2) NOT NULL,
+    monto_pagado NUMERIC(10,2) CONSTRAINT DF_Reserva_MontoPagado DEFAULT 0.00,
+    saldo_pendiente NUMERIC(10,2) NOT NULL,
+    estado_reserva VARCHAR(20) NOT NULL CONSTRAINT DF_Reserva_Estado DEFAULT 'PENDIENTE',
+    created_at DATETIME CONSTRAINT DF_Reserva_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Reserva PRIMARY KEY (reserva_id),
+    CONSTRAINT FK_Reserva_Cancha FOREIGN KEY (cancha_id) REFERENCES Cancha(cancha_id),
+    CONSTRAINT FK_Reserva_Cliente FOREIGN KEY (cliente_id) REFERENCES Cliente(cliente_id),
+    CONSTRAINT FK_Reserva_Usuario FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    CONSTRAINT FK_Reserva_Evento FOREIGN KEY (evento_id) REFERENCES Evento(evento_id) ON DELETE SET NULL,
+    CONSTRAINT CK_Reserva_Tipo CHECK (tipo_reserva IN ('REGULAR', 'EVENTO')),
+    CONSTRAINT CK_Reserva_Estado CHECK (estado_reserva IN ('PENDIENTE', 'PAGADA', 'COMPLETADO', 'CANCELADO', 'REEMBOLSADO'))
+);
+GO
+
+CREATE TABLE Pago (
+    pago_id INT IDENTITY(1,1),
+    reserva_id INT NULL,
+    evento_id INT NULL,
+    fecha DATE NOT NULL CONSTRAINT DF_Pago_Fecha DEFAULT GETDATE(),
+    monto NUMERIC(10,2) NOT NULL,
+    metodo_pago VARCHAR(20) NOT NULL,
+    estado VARCHAR(20) NOT NULL CONSTRAINT DF_Pago_Estado DEFAULT 'COMPLETADO',
+    tipo_transaccion VARCHAR(20) NOT NULL CONSTRAINT DF_Pago_TipoTx DEFAULT 'INGRESO',
+    referencia VARCHAR(30),
+    nota VARCHAR(250),
+    created_at DATETIME CONSTRAINT DF_Pago_CreatedAt DEFAULT GETDATE(),
+    created_by VARCHAR(20),
+    updated_at DATETIME,
+    updated_by VARCHAR(20),
+
+    CONSTRAINT PK_Pago PRIMARY KEY (pago_id),
+    CONSTRAINT FK_Pago_Reserva FOREIGN KEY (reserva_id) REFERENCES Reserva(reserva_id),
+    CONSTRAINT FK_Pago_Evento FOREIGN KEY (evento_id) REFERENCES Evento(evento_id),
+    CONSTRAINT CK_Pago_Metodo CHECK (metodo_pago IN ('EFECTIVO', 'TRANSFERENCIA', 'TARJETA', 'YAPE', 'PLIN')),
+    CONSTRAINT CK_Pago_Estado CHECK (estado IN ('COMPLETADO', 'ANULADO')),
+    CONSTRAINT CK_Pago_TipoTx CHECK (tipo_transaccion IN ('INGRESO', 'SALIDA')),
+    
+    -- Constraint Inteligente: Valida que el dinero pertenezca a una Reserva o a un Evento
+    CONSTRAINT CK_Pago_Origen CHECK (reserva_id IS NOT NULL OR evento_id IS NOT NULL)
+);
+GO
+
+-- Paso 1: Agregar la columna empresa_id
+ALTER TABLE Usuario ADD empresa_id INT NULL;
+GO
+
+-- Paso 2: Crear la llave foránea hacia Empresa
+ALTER TABLE Usuario ADD CONSTRAINT FK_Usuario_Empresa
+FOREIGN KEY (empresa_id) REFERENCES Empresa(empresa_id);
+GO
+
+-- Paso 3: Permitir que sucursal_id sea NULL (Para que el SuperAdmin no esté atado a una sola)
+ALTER TABLE Usuario ALTER COLUMN sucursal_id INT NULL;
+GO

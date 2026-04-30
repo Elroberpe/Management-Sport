@@ -1,0 +1,76 @@
+com.tuempresa.canchas
+│
+├── CanchasApplication.java                 # Punto de entrada (main) de Spring Boot
+│
+-- 👇 CAPAS TRANSVERSALES (CROSS-CUTTING CONCERNS) 👇 --
+│
+├── config/                                 # Configuraciones globales del sistema
+│   ├── OpenApiConfig.java                  # Documentación Swagger
+│   ├── SecurityConfig.java                 # Configuración de rutas públicas/privadas
+│   └── CorsConfig.java                     # Permisos para que Angular/React se conecten
+│
+├── security/                               # Lógica de Autenticación (JWT)
+│   ├── JwtAuthenticationFilter.java        # Intercepta peticiones para validar el Token
+│   ├── JwtTokenProvider.java               # Genera y firma los tokens
+│   └── CustomUserDetailsService.java       # Conecta Spring Security con tu tabla Usuario
+│
+├── exception/                              # Manejo centralizado de errores
+│   ├── GlobalExceptionHandler.java         # Convierte excepciones en JSON limpio (HTTP 400, 404, 500)
+│   ├── ResourceNotFoundException.java      # Ej: "Cancha no encontrada"
+│   └── BusinessRuleException.java          # Ej: "La cancha ya está reservada en ese horario"
+│
+├── common/                                 # Elementos compartidos por todos los módulos
+│   ├── enums/                              # Todos los ENUMs (Roles, Estados, Tipos)
+│   │   ├── EstadoReserva.java
+│   │   └── MetodoPago.java
+│   └── utils/                              # Funciones de ayuda (ej. formateo de fechas)
+│
+-- 👇 MÓDULOS DE NEGOCIO (DOMAIN BOUNDED CONTEXTS) 👇 --
+│
+├── core/                                   # [MÓDULO 1] DUEÑO DE: Empresa, Sucursal, Cancha
+│   ├── controller/                         # Endpoints REST: @RestController /api/v1/canchas
+│   ├── dto/                                # Objetos de transferencia de datos
+│   │   ├── request/                        # Datos que entran (ej. CanchaCreateReqDTO)
+│   │   └── response/                       # Datos que salen (ej. CanchaResDTO)
+│   ├── entity/                             # Modelos JPA: @Entity Cancha, Empresa
+│   ├── repository/                         # Spring Data JPA: CanchaRepository
+│   ├── service/                            # Lógica interna del CRUD de canchas
+│   │   ├── CanchaService.java
+│   │   └── impl/CanchaServiceImpl.java
+│   └── facade/                             # 🚪 API INTERNA PARA OTROS MÓDULOS
+│       ├── CanchaFacade.java               # Ej: BigDecimal getPrecioHora(canchaId)
+│       └── impl/CanchaFacadeImpl.java
+│
+├── user/                                   # [MÓDULO 2] DUEÑO DE: Usuario, Cliente
+│   ├── controller/                         # Endpoints REST: /api/v1/clientes, /api/v1/auth
+│   ├── dto/
+│   ├── entity/                             # @Entity Usuario, Cliente
+│   ├── repository/
+│   ├── service/
+│   │   ├── ClienteService.java
+│   │   └── impl/ClienteServiceImpl.java
+│   └── facade/                             # 🚪 API INTERNA PARA OTROS MÓDULOS
+│       ├── ClienteFacade.java              # Ej: boolean isClienteActivo(clienteId)
+│       └── impl/ClienteFacadeImpl.java
+│
+├── booking/                                # [MÓDULO 3] DUEÑO DE: Reserva, Evento, Mantenimiento
+│   ├── controller/                         # Endpoints REST: /api/v1/reservas
+│   ├── dto/
+│   ├── entity/                             # @Entity Reserva, Evento, Mantenimiento
+│   ├── repository/
+│   ├── service/
+│   │   ├── ReservaService.java
+│   │   └── impl/ReservaServiceImpl.java    # 👉 Inyecta: CanchaFacade y ClienteFacade
+│   └── facade/                             # 🚪 API INTERNA PARA FINANCE
+│       ├── ReservaFacade.java              # Ej: ReservaMontoDTO getMontoPendiente(reservaId)
+│       └── impl/ReservaFacadeImpl.java
+│
+└── finance/                                # [MÓDULO 4] DUEÑO DE: Pago
+    ├── controller/                         # Endpoints REST: /api/v1/pagos
+    ├── dto/
+    ├── entity/                             # @Entity Pago
+    ├── repository/
+    └── service/
+        ├── PagoService.java
+        └── impl/PagoServiceImpl.java       # 👉 Inyecta: ReservaFacade (para saber cuánto cobrar)
+            # Nota: Finance suele ser el fin de la cadena, rara vez necesita un Facade propio.
