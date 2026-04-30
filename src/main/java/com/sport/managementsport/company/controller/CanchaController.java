@@ -9,6 +9,7 @@ import com.sport.managementsport.company.service.CanchaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,12 +25,14 @@ public class CanchaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<CanchaResponse> createCancha(@Valid @RequestBody CreateCanchaRequest request) {
         CanchaResponse newCancha = canchaService.createCancha(request);
         return new ResponseEntity<>(newCancha, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<CanchaResponse> getCanchaById(@PathVariable Integer id) {
         return canchaService.getCanchaById(id)
                 .map(ResponseEntity::ok)
@@ -37,6 +40,7 @@ public class CanchaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<List<CanchaResponse>> getAllCanchas(
             @RequestParam(required = false) Integer sucursalId,
             @RequestParam(required = false) EstadoCancha estado) {
@@ -45,18 +49,21 @@ public class CanchaController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<CanchaResponse> updateCancha(@PathVariable Integer id, @Valid @RequestBody UpdateCanchaRequest request) {
         CanchaResponse updatedCancha = canchaService.updateCancha(id, request);
         return ResponseEntity.ok(updatedCancha);
     }
 
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<CanchaResponse> updateEstadoCancha(@PathVariable Integer id, @Valid @RequestBody UpdateEstadoCanchaRequest request) {
         CanchaResponse updatedCancha = canchaService.updateEstadoCancha(id, request);
         return ResponseEntity.ok(updatedCancha);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<Void> deleteCancha(@PathVariable Integer id) {
         canchaService.deleteCancha(id);
         return ResponseEntity.noContent().build();

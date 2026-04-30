@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class PagoController {
     private final PagoService pagoService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Page<PagoResponse>> getHistorialFinanciero(
             @RequestParam(required = false) LocalDate desde,
             @RequestParam(required = false) LocalDate hasta,
@@ -34,17 +36,20 @@ public class PagoController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<PagoResponse> getPagoById(@PathVariable Integer id) {
         return ResponseEntity.ok(pagoService.getPagoById(id));
     }
 
     @PatchMapping("/{id}/anular")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Void> anularPago(@PathVariable Integer id, @Valid @RequestBody AnularPagoRequest request) {
         pagoService.anularPago(id, request);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/stats/ingresos-anuales")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<KpiResponse> getIngresosAnuales(
             @RequestParam(required = false) Integer sucursalId) {
         return ResponseEntity.ok(pagoService.getIngresosAnuales(sucursalId));

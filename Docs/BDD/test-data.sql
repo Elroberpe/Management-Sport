@@ -19,11 +19,14 @@ VALUES (1, 'Sede Surco', 'Av. Primavera 456, Surco', '012233445');
 GO
 
 -- 3. USUARIOS (para asociar a las reservas)
--- La contraseña para ambos es "password" (hasheada con BCrypt)
+-- La contraseña para todos es "admin123" (hasheada con BCrypt)
+-- El hash válido para "admin123" es: $2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6
 INSERT INTO Usuario (empresa_id, sucursal_id, username, nombre, email, password, rol)
-VALUES (1, 1, 'admin_mira', 'Admin Miraflores', 'admin.mira@elpelotero.com', '$2a$10$E.qg5d1xYv.N5s2y/C5x7.sJ.B2A7.X/j.A/B2A7.X/j.A/B2A7.X', 'ADMIN');
+VALUES (1, NULL, 'superadmin', 'Super Administrador', 'superadmin@elpelotero.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', 'SUPERADMIN');
 INSERT INTO Usuario (empresa_id, sucursal_id, username, nombre, email, password, rol)
-VALUES (1, 2, 'recepcionista_surco', 'Recepcionista Surco', 'recep.surco@elpelotero.com', '$2a$10$E.qg5d1xYv.N5s2y/C5x7.sJ.B2A7.X/j.A/B2A7.X/j.A/B2A7.X', 'RECEPCIONISTA');
+VALUES (1, 1, 'admin_mira', 'Admin Miraflores', 'admin.mira@elpelotero.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', 'ADMIN');
+INSERT INTO Usuario (empresa_id, sucursal_id, username, nombre, email, password, rol)
+VALUES (1, 2, 'recepcionista_surco', 'Recepcionista Surco', 'recep.surco@elpelotero.com', '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', 'RECEPCIONISTA');
 GO
 
 -- 4. CLIENTES (4)

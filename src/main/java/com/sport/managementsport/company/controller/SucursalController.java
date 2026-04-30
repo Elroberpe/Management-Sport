@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +21,14 @@ public class SucursalController {
     private final SucursalService sucursalService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<SucursalResponse> createSucursal(@Valid @RequestBody CreateSucursalRequest request) {
         SucursalResponse newSucursal = sucursalService.createSucursal(request);
         return new ResponseEntity<>(newSucursal, HttpStatus.CREATED);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<List<SucursalResponse>> getAllSucursales(@RequestParam(required = false) Integer empresaId) {
         List<SucursalResponse> sucursales;
         if (empresaId != null) {
@@ -37,29 +40,34 @@ public class SucursalController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<SucursalResponse> getSucursalById(@PathVariable Integer id) {
         SucursalResponse sucursal = sucursalService.getSucursalById(id);
         return ResponseEntity.ok(sucursal);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<SucursalResponse> updateSucursal(@PathVariable Integer id, @Valid @RequestBody UpdateSucursalRequest request) {
         SucursalResponse updatedSucursal = sucursalService.updateSucursal(id, request);
         return ResponseEntity.ok(updatedSucursal);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<Void> deleteSucursal(@PathVariable Integer id) {
         sucursalService.deleteSucursal(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/activar")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<SucursalResponse> activarSucursal(@PathVariable Integer id) {
         return ResponseEntity.ok(sucursalService.activarSucursal(id));
     }
 
     @PatchMapping("/{id}/desactivar")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<SucursalResponse> desactivarSucursal(@PathVariable Integer id) {
         return ResponseEntity.ok(sucursalService.desactivarSucursal(id));
     }

@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -30,18 +31,21 @@ public class ReservaController {
     private final PagoService pagoService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> createReserva(@Valid @RequestBody CreateReservaRequest request) {
         ReservaResponse newReserva = reservaService.createReserva(request);
         return new ResponseEntity<>(newReserva, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> getReservaById(@PathVariable Integer id) {
         ReservaResponse reserva = reservaService.getReservaById(id);
         return ResponseEntity.ok(reserva);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Page<ReservaResponse>> getAllReservas(
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
@@ -68,36 +72,42 @@ public class ReservaController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> updateReserva(@PathVariable Integer id, @Valid @RequestBody UpdateReservaRequest request) {
         ReservaResponse updatedReserva = reservaService.updateReserva(id, request);
         return ResponseEntity.ok(updatedReserva);
     }
 
     @PostMapping("/{id}/pagos")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> addPago(@PathVariable Integer id, @Valid @RequestBody AddPagoToReservaRequest request) {
         ReservaResponse updatedReserva = reservaService.addPago(id, request);
         return ResponseEntity.ok(updatedReserva);
     }
 
     @GetMapping("/{id}/pagos")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<List<PagoResponse>> getHistorialPagos(@PathVariable Integer id) {
         List<PagoResponse> pagos = pagoService.getPagosByReservaId(id);
         return ResponseEntity.ok(pagos);
     }
 
     @PatchMapping("/{id}/cancelar")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> cancelReserva(@PathVariable Integer id, @Valid @RequestBody CancelReservaRequest request) {
         ReservaResponse updatedReserva = reservaService.cancelReserva(id, request);
         return ResponseEntity.ok(updatedReserva);
     }
 
     @PostMapping("/{id}/reprogramar")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> reprogramarReserva(@PathVariable Integer id, @Valid @RequestBody ReprogramarReservaRequest request) {
         ReservaResponse nuevaReserva = reservaService.reprogramarReserva(id, request);
         return ResponseEntity.ok(nuevaReserva);
     }
 
     @PostMapping("/{id}/reembolsos")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ReservaResponse> registrarReembolsoManual(
             @PathVariable Integer id,
             @Valid @RequestBody CreateReembolsoRequest request) {
@@ -106,12 +116,14 @@ public class ReservaController {
     }
 
     @GetMapping("/stats/completadas-hoy")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<KpiResponse> getReservasCompletadasHoy(
             @RequestParam(required = false) Integer sucursalId) {
         return ResponseEntity.ok(reservaService.getReservasCompletadasHoy(sucursalId));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Void> deleteReserva(@PathVariable Integer id) {
         reservaService.deleteReserva(id);
         return ResponseEntity.noContent().build();
