@@ -84,6 +84,7 @@ CREATE TABLE Usuario (
     created_by VARCHAR(20),
     updated_at DATETIME,
     updated_by VARCHAR(20),
+    refresh_token VARCHAR(500),
     CONSTRAINT FK_Usuario_Empresa FOREIGN KEY (empresa_id) REFERENCES Empresa(empresa_id),
     CONSTRAINT FK_Usuario_Sucursal FOREIGN KEY (sucursal_id) REFERENCES Sucursal(sucursal_id),
     CONSTRAINT UQ_Usuario_Username UNIQUE (username),
