@@ -1,9 +1,7 @@
 package com.sport.managementsport.identity.service.impl;
 
 import com.sport.managementsport.common.enums.RolUsuario;
-import com.sport.managementsport.company.domain.Empresa;
 import com.sport.managementsport.company.domain.Sucursal;
-import com.sport.managementsport.company.service.EmpresaService;
 import com.sport.managementsport.company.service.SucursalService;
 import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.dto.ChangePasswordRequest;
@@ -19,54 +17,80 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final EmpresaService empresaService;
     private final SucursalService sucursalService;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, @Lazy EmpresaService empresaService, @Lazy SucursalService sucursalService, PasswordEncoder passwordEncoder) {
+    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, @Lazy SucursalService sucursalService, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
-        this.empresaService = empresaService;
         this.sucursalService = sucursalService;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
+    }
+
+    @Override
     @Transactional
     public UsuarioResponse createUsuario(CreateUsuarioRequest request) {
+        // Usando los métodos de validación optimizados
         validateUsernameUniqueness(request.getUsername(), null);
         validateEmailUniqueness(request.getEmail(), null);
 
-        if ((request.getRol() == RolUsuario.ADMIN || request.getRol() == RolUsuario.RECEPCIONISTA) && request.getSucursalId() == null) {
-            throw new BusinessRuleException("La sucursal es obligatoria para los roles ADMIN y RECEPCIONISTA.");
-        }
+        Usuario currentUser = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        RolUsuario currentUserRole = currentUser.getRol();
+        RolUsuario roleToAssign = request.getRol();
 
-        Empresa empresa = empresaService.findEmpresaEntityById(request.getEmpresaId());
+        switch (currentUserRole) {
+            case ADMIN:
+                if (roleToAssign != RolUsuario.RECEPCIONISTA) {
+                    throw new AccessDeniedException("Un ADMIN solo puede crear usuarios con rol RECEPCIONISTA.");
+                }
+                break;
+            case SUPERADMIN:
+                if (roleToAssign == RolUsuario.SUPERADMIN) {
+                    throw new BusinessRuleException("No se puede crear más de un SUPERADMIN.");
+                }
+                break;
+            case RECEPCIONISTA:
+                throw new AccessDeniedException("Un RECEPCIONISTA no puede crear usuarios.");
+        }
 
         Sucursal sucursal = null;
         if (request.getSucursalId() != null) {
             sucursal = sucursalService.findSucursalEntityById(request.getSucursalId());
         }
 
+        if (roleToAssign == RolUsuario.ADMIN && sucursal == null) {
+            throw new BusinessRuleException("Para crear un ADMIN, es obligatorio especificar la sucursal que va a gestionar.");
+        }
+
         Usuario usuario = new Usuario();
-        usuario.setEmpresa(empresa);
+        usuario.setEmpresa(currentUser.getEmpresa());
         usuario.setSucursal(sucursal);
         usuario.setUsername(request.getUsername());
         usuario.setNombre(request.getNombre());
         usuario.setEmail(request.getEmail());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        usuario.setRol(request.getRol());
+        usuario.setRol(roleToAssign);
 
         Usuario savedUsuario = usuarioRepository.save(usuario);
         return toUsuarioResponse(savedUsuario);
@@ -150,16 +174,30 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     private void validateUsernameUniqueness(String username, Integer userIdToIgnore) {
-        Optional<Usuario> existingUser = usuarioRepository.findByUsername(username);
-        if (existingUser.isPresent() && (userIdToIgnore == null || !existingUser.get().getUsuarioId().equals(userIdToIgnore))) {
-            throw new DuplicateResourceException("El nombre de usuario '" + username + "' ya está en uso.");
+        if (usuarioRepository.existsByUsername(username)) {
+            if (userIdToIgnore != null) {
+                // Si estamos actualizando, solo lanzamos error si el username pertenece a OTRO usuario.
+                Usuario existingUser = usuarioRepository.findByUsername(username).get();
+                if (!existingUser.getUsuarioId().equals(userIdToIgnore)) {
+                    throw new DuplicateResourceException("El nombre de usuario '" + username + "' ya está en uso.");
+                }
+            } else {
+                // Si estamos creando, cualquier existencia es un error.
+                throw new DuplicateResourceException("El nombre de usuario '" + username + "' ya está en uso.");
+            }
         }
     }
 
     private void validateEmailUniqueness(String email, Integer userIdToIgnore) {
-        Optional<Usuario> existingUser = usuarioRepository.findByEmail(email);
-        if (existingUser.isPresent() && (userIdToIgnore == null || !existingUser.get().getUsuarioId().equals(userIdToIgnore))) {
-            throw new DuplicateResourceException("El email '" + email + "' ya está en uso.");
+        if (usuarioRepository.existsByEmail(email)) {
+            if (userIdToIgnore != null) {
+                Usuario existingUser = usuarioRepository.findByEmail(email).get();
+                if (!existingUser.getUsuarioId().equals(userIdToIgnore)) {
+                    throw new DuplicateResourceException("El email '" + email + "' ya está en uso.");
+                }
+            } else {
+                throw new DuplicateResourceException("El email '" + email + "' ya está en uso.");
+            }
         }
     }
 
