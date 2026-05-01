@@ -17,7 +17,7 @@ public interface UsuarioService extends UserDetailsService {
 
     UsuarioResponse getUsuarioById(Integer id);
 
-    Page<UsuarioResponse> getAllUsuarios(Pageable pageable);
+    Page<UsuarioResponse> getAllUsuarios(Pageable pageable, Usuario currentUser);
 
     UsuarioResponse updateUsuario(Integer id, UpdateUsuarioRequest request);
 

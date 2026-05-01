@@ -106,8 +106,15 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UsuarioResponse> getAllUsuarios(Pageable pageable) {
-        return usuarioRepository.findAll(pageable).map(this::toUsuarioResponse);
+    public Page<UsuarioResponse> getAllUsuarios(Pageable pageable, Usuario currentUser) {
+        if (currentUser.getRol() == RolUsuario.SUPERADMIN) {
+            return usuarioRepository.findAll(pageable).map(this::toUsuarioResponse);
+        } else if (currentUser.getRol() == RolUsuario.ADMIN) {
+            Integer sucursalId = currentUser.getSucursal().getSucursalId();
+            return usuarioRepository.findBySucursalSucursalId(sucursalId, pageable).map(this::toUsuarioResponse);
+        }
+        // Por defecto, si no es ninguno de los anteriores (ej. RECEPCIONISTA), devuelve una página vacía.
+        return Page.empty(pageable);
     }
 
     @Override

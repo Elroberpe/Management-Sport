@@ -1,5 +1,6 @@
 package com.sport.managementsport.identity.controller;
 
+import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.dto.ChangePasswordRequest;
 import com.sport.managementsport.identity.dto.CreateUsuarioRequest;
 import com.sport.managementsport.identity.dto.UpdateUsuarioRequest;
@@ -13,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,35 +27,32 @@ public class UsuarioController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<UsuarioResponse> createUsuario(@Valid @RequestBody CreateUsuarioRequest request) {
-        // Lógica de servicio debe validar que un ADMIN solo puede crear RECEPCIONISTAS para su sede.
         UsuarioResponse newUsuario = usuarioService.createUsuario(request);
         return new ResponseEntity<>(newUsuario, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')") // Un usuario también debería poder ver su propio perfil.
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN') or (hasRole('RECEPCIONISTA') and #id == authentication.principal.usuarioId)")
     public ResponseEntity<UsuarioResponse> getUsuarioById(@PathVariable Integer id) {
         return ResponseEntity.ok(usuarioService.getUsuarioById(id));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<Page<UsuarioResponse>> getAllUsuarios(@PageableDefault(size = 10, sort = "nombre") Pageable pageable) {
-        // Lógica de servicio debe filtrar por sede si el usuario es ADMIN.
-        return ResponseEntity.ok(usuarioService.getAllUsuarios(pageable));
+    public ResponseEntity<Page<UsuarioResponse>> getAllUsuarios(@PageableDefault(size = 10, sort = "nombre") Pageable pageable, Authentication authentication) {
+        Usuario currentUser = (Usuario) authentication.getPrincipal();
+        return ResponseEntity.ok(usuarioService.getAllUsuarios(pageable, currentUser));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')") // Un usuario también debería poder actualizar su propio perfil.
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN') or (hasRole('RECEPCIONISTA') and #id == authentication.principal.usuarioId)")
     public ResponseEntity<UsuarioResponse> updateUsuario(@PathVariable Integer id, @Valid @RequestBody UpdateUsuarioRequest request) {
-        // Lógica de servicio debe validar que un ADMIN solo puede actualizar usuarios de su sede.
         return ResponseEntity.ok(usuarioService.updateUsuario(id, request));
     }
 
     @PatchMapping("/{id}/password")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')") // Un usuario también debería poder cambiar su propia contraseña.
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN') or (hasRole('RECEPCIONISTA') and #id == authentication.principal.usuarioId)")
     public ResponseEntity<Void> changePassword(@PathVariable Integer id, @Valid @RequestBody ChangePasswordRequest request) {
-        // Lógica de servicio debe validar que un ADMIN solo puede cambiar la contraseña de usuarios de su sede.
         usuarioService.changePassword(id, request);
         return ResponseEntity.noContent().build();
     }
@@ -61,7 +60,6 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Void> deleteUsuario(@PathVariable Integer id) {
-        // Lógica de servicio debe validar que un ADMIN solo puede eliminar usuarios de su sede.
         usuarioService.deleteUsuario(id);
         return ResponseEntity.noContent().build();
     }
