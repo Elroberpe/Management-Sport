@@ -7,19 +7,25 @@ import com.sport.managementsport.identity.dto.UpdateUsuarioRequest;
 import com.sport.managementsport.identity.dto.UsuarioResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
-public interface UsuarioService {
+public interface UsuarioService extends UserDetailsService {
 
     UsuarioResponse createUsuario(CreateUsuarioRequest request);
+
     UsuarioResponse getUsuarioById(Integer id);
+
     Page<UsuarioResponse> getAllUsuarios(Pageable pageable);
+
     UsuarioResponse updateUsuario(Integer id, UpdateUsuarioRequest request);
+
     void changePassword(Integer id, ChangePasswordRequest request);
+
     void deleteUsuario(Integer id);
+
     List<UsuarioResponse> getUsuariosBySucursalId(Integer sucursalId);
 
-    // Método para uso interno
     Usuario findUsuarioEntityById(Integer id);
 }
