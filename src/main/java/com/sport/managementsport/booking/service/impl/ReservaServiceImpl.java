@@ -21,7 +21,6 @@ import com.sport.managementsport.finance.service.PagoService;
 import com.sport.managementsport.identity.domain.Cliente;
 import com.sport.managementsport.identity.domain.Usuario;
 import com.sport.managementsport.identity.service.ClienteService;
-import com.sport.managementsport.identity.service.UsuarioService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -29,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,15 +50,13 @@ public class ReservaServiceImpl implements ReservaService {
     private final ClienteService clienteService;
     private final MantenimientoService mantenimientoService;
     private final PagoService pagoService;
-    private final UsuarioService usuarioService;
 
-    public ReservaServiceImpl(ReservaRepository reservaRepository, CanchaService canchaService, ClienteService clienteService, @Lazy MantenimientoService mantenimientoService, @Lazy PagoService pagoService, UsuarioService usuarioService) {
+    public ReservaServiceImpl(ReservaRepository reservaRepository, CanchaService canchaService, ClienteService clienteService, @Lazy MantenimientoService mantenimientoService, @Lazy PagoService pagoService) {
         this.reservaRepository = reservaRepository;
         this.canchaService = canchaService;
         this.clienteService = clienteService;
         this.mantenimientoService = mantenimientoService;
         this.pagoService = pagoService;
-        this.usuarioService = usuarioService;
     }
 
     @Override
@@ -75,7 +73,7 @@ public class ReservaServiceImpl implements ReservaService {
 
         Cancha cancha = canchaService.findCanchaEntityById(request.getCanchaId());
         Cliente cliente = clienteService.findClienteEntityById(request.getClienteId());
-        Usuario usuarioOperador = usuarioService.findUsuarioEntityById(1);
+        Usuario usuarioOperador = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (cancha.getEstadoCancha() != EstadoCancha.DISPONIBLE) {
             throw new BusinessRuleException("No se puede reservar. La cancha no está disponible (estado: " + cancha.getEstadoCancha() + ").");
@@ -384,7 +382,7 @@ public class ReservaServiceImpl implements ReservaService {
     public Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDateTime startDateTime, LocalDateTime endDateTime, Evento evento) {
         Cancha cancha = canchaService.findCanchaEntityById(canchaId);
         Cliente cliente = clienteService.findClienteEntityById(clienteId);
-        Usuario usuario = usuarioService.findUsuarioEntityById(1);
+        Usuario usuario = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Reserva reserva = new Reserva();
         reserva.setCancha(cancha);
