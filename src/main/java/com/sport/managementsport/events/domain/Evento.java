@@ -51,7 +51,7 @@ public class Evento extends AuditableEntity {
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    @Column(columnDefinition = "VARCHAR(MAX)")
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
     @Enumerated(EnumType.STRING)
