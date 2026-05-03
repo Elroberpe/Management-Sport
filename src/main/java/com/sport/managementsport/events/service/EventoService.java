@@ -9,9 +9,10 @@ import java.math.BigDecimal;
 public interface EventoService {
     EventoResponse createEvento(CreateEventoRequest request);
     EventoResponse getEventoById(Integer id);
-    Page<EventoResponse> getAllEventos(Pageable pageable);
+    Page<EventoResponse> getAllEventos(Integer sucursalId, Pageable pageable);
     EventoResponse updateEvento(Integer id, UpdateEventoRequest request);
     EventoResponse cancelarEvento(Integer id, CancelEventoRequest request);
+    SimulacionCancelacionResponse simularCancelacion(Integer id);
     EventoResponse addPago(Integer id, AddPagoToEventoRequest request);
     EventoResponse reprogramarEvento(Integer id, ReprogramarEventoRequest request);
 

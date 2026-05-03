@@ -15,6 +15,7 @@ import java.util.List;
 public interface PagoService {
     PagoResponse createPago(CreatePagoRequest request);
     List<PagoResponse> getPagosByReservaId(Integer reservaId);
+    List<PagoResponse> getPagosByEventoId(Integer eventoId);
     PagoResponse getPagoById(Integer id);
     Page<PagoResponse> getAllPagos(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId, Pageable pageable);
     void anularPago(Integer id, AnularPagoRequest request);

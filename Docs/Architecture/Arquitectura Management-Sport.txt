@@ -1,6 +1,6 @@
-com.tuempresa.canchas
+com.sport.managementsport
 │
-├── CanchasApplication.java                 # Punto de entrada (main) de Spring Boot
+├── ManagementSportApplication.java         # Punto de entrada (main) de Spring Boot
 │
 -- 👇 CAPAS TRANSVERSALES (CROSS-CUTTING CONCERNS) 👇 --
 │
@@ -20,43 +20,44 @@ com.tuempresa.canchas
 │   └── BusinessRuleException.java          # Ej: "La cancha ya está reservada en ese horario"
 │
 ├── common/                                 # Elementos compartidos por todos los módulos
+│   ├── domain/                             # Clases base (AuditableEntity, etc.)
 │   ├── enums/                              # Todos los ENUMs (Roles, Estados, Tipos)
 │   │   ├── EstadoReserva.java
-│   │   └── MetodoPago.java
-│   └── utils/                              # Funciones de ayuda (ej. formateo de fechas)
+│   │   └── RolUsuario.java
+│   └── utils/                              # Funciones de ayuda
 │
 -- 👇 MÓDULOS DE NEGOCIO (DOMAIN BOUNDED CONTEXTS) 👇 --
 │
-├── core/                                   # [MÓDULO 1] DUEÑO DE: Empresa, Sucursal, Cancha
+├── company/                                # [MÓDULO 1] DUEÑO DE: Empresa, Sucursal, Cancha
 │   ├── controller/                         # Endpoints REST: @RestController /api/v1/canchas
 │   ├── dto/                                # Objetos de transferencia de datos
-│   │   ├── request/                        # Datos que entran (ej. CanchaCreateReqDTO)
-│   │   └── response/                       # Datos que salen (ej. CanchaResDTO)
-│   ├── entity/                             # Modelos JPA: @Entity Cancha, Empresa
-│   ├── repository/                         # Spring Data JPA: CanchaRepository
-│   ├── service/                            # Lógica interna del CRUD de canchas
+│   │   ├── request/                        # Datos que entran
+│   │   └── response/                       # Datos que salen
+│   ├── domain/                             # Modelos JPA: @Entity Cancha, Empresa, Sucursal
+│   ├── repository/                         # Spring Data JPA
+│   ├── service/                            # Lógica interna del CRUD de canchas/empresas
 │   │   ├── CanchaService.java
 │   │   └── impl/CanchaServiceImpl.java
 │   └── facade/                             # 🚪 API INTERNA PARA OTROS MÓDULOS
 │       ├── CanchaFacade.java               # Ej: BigDecimal getPrecioHora(canchaId)
 │       └── impl/CanchaFacadeImpl.java
 │
-├── user/                                   # [MÓDULO 2] DUEÑO DE: Usuario, Cliente
-│   ├── controller/                         # Endpoints REST: /api/v1/clientes, /api/v1/auth
+├── identity/                               # [MÓDULO 2] DUEÑO DE: Usuario, Cliente, Autenticación
+│   ├── controller/                         # Endpoints REST: /api/v1/usuarios, /api/v1/auth
 │   ├── dto/
-│   ├── entity/                             # @Entity Usuario, Cliente
+│   ├── domain/                             # @Entity Usuario, Cliente
 │   ├── repository/
 │   ├── service/
-│   │   ├── ClienteService.java
-│   │   └── impl/ClienteServiceImpl.java
+│   │   ├── UsuarioService.java
+│   │   └── impl/UsuarioServiceImpl.java
 │   └── facade/                             # 🚪 API INTERNA PARA OTROS MÓDULOS
 │       ├── ClienteFacade.java              # Ej: boolean isClienteActivo(clienteId)
 │       └── impl/ClienteFacadeImpl.java
 │
-├── booking/                                # [MÓDULO 3] DUEÑO DE: Reserva, Evento, Mantenimiento
+├── booking/                                # [MÓDULO 3] DUEÑO DE: Reserva, Mantenimiento
 │   ├── controller/                         # Endpoints REST: /api/v1/reservas
 │   ├── dto/
-│   ├── entity/                             # @Entity Reserva, Evento, Mantenimiento
+│   ├── domain/                             # @Entity Reserva, Mantenimiento
 │   ├── repository/
 │   ├── service/
 │   │   ├── ReservaService.java
@@ -65,12 +66,21 @@ com.tuempresa.canchas
 │       ├── ReservaFacade.java              # Ej: ReservaMontoDTO getMontoPendiente(reservaId)
 │       └── impl/ReservaFacadeImpl.java
 │
-└── finance/                                # [MÓDULO 4] DUEÑO DE: Pago
-    ├── controller/                         # Endpoints REST: /api/v1/pagos
+├── finance/                                # [MÓDULO 4] DUEÑO DE: Pago, Facturación
+│   ├── controller/                         # Endpoints REST: /api/v1/pagos
+│   ├── dto/
+│   ├── domain/                             # @Entity Pago
+│   ├── repository/
+│   └── service/
+│       ├── PagoService.java
+│       └── impl/PagoServiceImpl.java       # 👉 Inyecta: ReservaFacade (para saber cuánto cobrar)
+│
+├── events/                                 # [MÓDULO 5] DUEÑO DE: Eventos de dominio asíncronos (CQRS/Event Driven)
+│   ├── publisher/                          # Publicadores de eventos (Ej: ReservaCreadaEventPublisher)
+│   └── listener/                           # Escuchadores de eventos (Ej: NotificarUsuarioListener)
+│
+└── dashboard/                              # [MÓDULO 6] DUEÑO DE: Estadísticas y reportes agregados
+    ├── controller/                         # Endpoints REST: /api/v1/dashboard/estadisticas
     ├── dto/
-    ├── entity/                             # @Entity Pago
-    ├── repository/
-    └── service/
-        ├── PagoService.java
-        └── impl/PagoServiceImpl.java       # 👉 Inyecta: ReservaFacade (para saber cuánto cobrar)
-            # Nota: Finance suele ser el fin de la cadena, rara vez necesita un Facade propio.
+    └── service/                            # Lógica para cruzar datos de bookings, finance y company
+        └── DashboardService.java

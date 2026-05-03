@@ -14,6 +14,7 @@ import java.util.List;
 @Repository
 public interface PagoRepository extends JpaRepository<Pago, Integer>, JpaSpecificationExecutor<Pago> {
     List<Pago> findByReservaReservaId(Integer reservaId);
+    List<Pago> findByEventoEventoId(Integer eventoId);
 
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.tipoTransaccion = :tipo AND YEAR(p.fecha) = :year")
     BigDecimal sumByTipoTransaccionAndYear(@Param("tipo") TipoTransaccion tipo, @Param("year") int year);

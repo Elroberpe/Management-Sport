@@ -68,6 +68,14 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PagoResponse> getPagosByEventoId(Integer eventoId) {
+        return pagoRepository.findByEventoEventoId(eventoId).stream()
+                .map(this::toPagoResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PagoResponse getPagoById(Integer id) {
         return pagoRepository.findById(id)
                 .map(this::toPagoResponse)

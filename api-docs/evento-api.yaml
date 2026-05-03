@@ -13,8 +13,13 @@ paths:
       tags:
         - Eventos
       summary: "Listar todos los eventos"
-      description: "Obtiene una lista paginada de todos los eventos."
+      description: "Obtiene una lista paginada de todos los eventos. Si el usuario es SUPERADMIN, puede filtrar por sucursalId. Si es ADMIN/RECEPCIONISTA, el backend filtra automáticamente por su sucursal."
       parameters:
+        - name: sucursalId
+          in: query
+          description: "Opcional. ID de la sucursal para filtrar los eventos (solo tiene efecto si el usuario logueado es SUPERADMIN)."
+          schema:
+            type: integer
         - name: page
           in: query
           schema:
@@ -121,15 +126,29 @@ paths:
                 $ref: '#/components/schemas/EventoResponse'
         '400':
           description: "El monto excede el saldo o el evento está cancelado."
+    get:
+      tags:
+        - Pagos
+      summary: "Obtener el historial de pagos de un evento"
+      description: "Devuelve una lista con todos los pagos (adelantos, cuotas, saldo final) realizados para este evento."
+      responses:
+        '200':
+          description: "Lista de pagos obtenida."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PagoResponse'
 
   /eventos/{id}/cancelar:
     parameters:
       - $ref: '#/components/parameters/EventoId'
-    patch:
+    post:
       tags:
         - Eventos
       summary: "Cancelar un evento"
-      description: "Cancela un evento y todas sus reservas asociadas. (Nota: La lógica de reembolso aún está pendiente)."
+      description: "Cancela un evento y todas sus reservas asociadas. Permite registrar un monto de reembolso si aplica."
       requestBody:
         content:
           application/json:
@@ -143,7 +162,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventoResponse'
         '400':
-          description: "El evento ya está en un estado final."
+          description: "El evento ya está en un estado final o el reembolso excede el monto pagado."
 
   /eventos/{id}/reprogramar:
     parameters:
@@ -251,6 +270,8 @@ components:
       type: object
       properties:
         motivo: { type: string }
+        montoReembolso: { type: number, format: double }
+        notaReembolso: { type: string, nullable: true }
 
     AddPagoToEventoRequest:
       type: object
@@ -265,3 +286,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreateEventoRequest/properties/horarios/items'
+
+    PagoResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        reservaId: { type: integer, nullable: true }
+        eventoId: { type: integer, nullable: true }
+        fecha: { type: string, format: date }
+        monto: { type: number, format: double }
+        metodoPago: { type: string }
+        estado: { type: string }
+        tipoTransaccion: { type: string }
+        referencia: { type: string, nullable: true }
+        nota: { type: string, nullable: true }

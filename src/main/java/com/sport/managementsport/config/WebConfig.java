@@ -17,8 +17,9 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/v1/**")
-                        .allowedOriginPatterns(allowedOrigins) // <-- Cambio clave aquí
+                // Configuración para todos los endpoints de la API (incluyendo Auth y v1)
+                registry.addMapping("/api/**")
+                        .allowedOriginPatterns(allowedOrigins)
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

@@ -1,5 +1,6 @@
 package com.sport.managementsport.events.dto;
 
+import com.sport.managementsport.common.enums.MetodoPago;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,4 +25,6 @@ public class CancelEventoRequest {
     private BigDecimal montoReembolso;
 
     private String notaReembolso;
+
+    private MetodoPago metodoReembolso;
 }
