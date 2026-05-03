@@ -16,11 +16,19 @@ public interface PagoRepository extends JpaRepository<Pago, Integer>, JpaSpecifi
     List<Pago> findByReservaReservaId(Integer reservaId);
     List<Pago> findByEventoEventoId(Integer eventoId);
 
-    @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.tipoTransaccion = :tipo AND YEAR(p.fecha) = :year")
+    // --- SQL Server / Forma Antigua (Comentado) ---
+    // @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.tipoTransaccion = :tipo AND YEAR(p.fecha) = :year")
+    // --- Forma Estándar JPA / PostgreSQL ---
+    @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p WHERE p.tipoTransaccion = :tipo AND EXTRACT(YEAR FROM p.fecha) = :year")
     BigDecimal sumByTipoTransaccionAndYear(@Param("tipo") TipoTransaccion tipo, @Param("year") int year);
 
+    // --- SQL Server / Forma Antigua (Comentado) ---
+    // @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p " +
+    //        "LEFT JOIN p.reserva r LEFT JOIN r.cancha c " +
+    //        "WHERE p.tipoTransaccion = :tipo AND YEAR(p.fecha) = :year AND c.sucursal.sucursalId = :sucursalId")
+    // --- Forma Estándar JPA / PostgreSQL ---
     @Query("SELECT COALESCE(SUM(p.monto), 0) FROM Pago p " +
            "LEFT JOIN p.reserva r LEFT JOIN r.cancha c " +
-           "WHERE p.tipoTransaccion = :tipo AND YEAR(p.fecha) = :year AND c.sucursal.sucursalId = :sucursalId")
+           "WHERE p.tipoTransaccion = :tipo AND EXTRACT(YEAR FROM p.fecha) = :year AND c.sucursal.sucursalId = :sucursalId")
     BigDecimal sumByTipoTransaccionAndYearAndSucursal(@Param("tipo") TipoTransaccion tipo, @Param("year") int year, @Param("sucursalId") Integer sucursalId);
 }
