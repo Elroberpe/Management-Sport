@@ -19,9 +19,15 @@ import java.util.List;
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaSpecificationExecutor<Reserva> {
 
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
+    //                "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
+    //                ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+    //        nativeQuery = true)
+    // --- PostgreSQL ---
     @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
-                   "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
-                   ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+                   "CAST(r.fecha AS DATE) + CAST(r.hora_inicio AS TIME) < :endDateTime AND " +
+                   ":startDateTime < CAST(r.fecha AS DATE) + CAST(r.hora_fin AS TIME)",
            nativeQuery = true)
     List<Reserva> findConflictingReservas(
             @Param("canchaId") Integer canchaId,
@@ -29,9 +35,15 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("endDateTime") LocalDateTime endDateTime
     );
 
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.reserva_id <> :reservaIdToIgnore AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
+    //                "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
+    //                ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+    //        nativeQuery = true)
+    // --- PostgreSQL ---
     @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.reserva_id <> :reservaIdToIgnore AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
-                   "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
-                   ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+                   "CAST(r.fecha AS DATE) + CAST(r.hora_inicio AS TIME) < :endDateTime AND " +
+                   ":startDateTime < CAST(r.fecha AS DATE) + CAST(r.hora_fin AS TIME)",
            nativeQuery = true)
     List<Reserva> findConflictingReservasIgnoringSelf(
             @Param("canchaId") Integer canchaId,
@@ -40,10 +52,17 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("reservaIdToIgnore") Integer reservaIdToIgnore
     );
 
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
+    //                "(r.evento_id IS NULL OR r.evento_id <> :eventoIdToIgnore) AND " +
+    //                "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
+    //                ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+    //        nativeQuery = true)
+    // --- PostgreSQL ---
     @Query(value = "SELECT * FROM Reserva r WHERE r.cancha_id = :canchaId AND r.estado_reserva IN ('PENDIENTE', 'PAGADA') AND " +
                    "(r.evento_id IS NULL OR r.evento_id <> :eventoIdToIgnore) AND " +
-                   "DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_inicio), CAST(r.fecha AS DATETIME2)) < :endDateTime AND " +
-                   ":startDateTime < DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2))",
+                   "CAST(r.fecha AS DATE) + CAST(r.hora_inicio AS TIME) < :endDateTime AND " +
+                   ":startDateTime < CAST(r.fecha AS DATE) + CAST(r.hora_fin AS TIME)",
            nativeQuery = true)
     List<Reserva> findConflictingReservasIgnoringEvent(
             @Param("canchaId") Integer canchaId,
@@ -52,13 +71,23 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
             @Param("eventoIdToIgnore") Integer eventoIdToIgnore
     );
 
-    @Query(value = "SELECT * FROM Reserva r WHERE r.estado_reserva = :estado AND DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2)) < :currentDateTime", nativeQuery = true)
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT * FROM Reserva r WHERE r.estado_reserva = :estado AND DATEADD(ms, DATEDIFF(ms, '00:00:00', r.hora_fin), CAST(r.fecha AS DATETIME2)) < :currentDateTime", nativeQuery = true)
+    // --- PostgreSQL ---
+    @Query(value = "SELECT * FROM Reserva r WHERE r.estado_reserva = :estado AND CAST(r.fecha AS DATE) + CAST(r.hora_fin AS TIME) < :currentDateTime", nativeQuery = true)
     List<Reserva> findReservasToUpdateStatus(
             @Param("estado") String estado,
             @Param("currentDateTime") LocalDateTime currentDateTime
     );
 
-    @Query(value = "SELECT CAST(r.fecha AS DATE) as dia, SUM(DATEDIFF(minute, r.hora_inicio, r.hora_fin) / 60.0) as horasOcupadas " +
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT CAST(r.fecha AS DATE) as dia, SUM(DATEDIFF(minute, r.hora_inicio, r.hora_fin) / 60.0) as horasOcupadas " +
+    //                "FROM Reserva r JOIN Cancha c ON r.cancha_id = c.cancha_id " +
+    //                "WHERE c.sucursal_id = :sucursalId AND r.fecha BETWEEN :fechaDesde AND :fechaHasta " +
+    //                "AND r.estado_reserva NOT IN ('CANCELADO', 'REEMBOLSADO') " +
+    //                "GROUP BY CAST(r.fecha AS DATE)", nativeQuery = true)
+    // --- PostgreSQL ---
+    @Query(value = "SELECT CAST(r.fecha AS DATE) as dia, SUM(EXTRACT(EPOCH FROM (CAST(r.hora_fin AS TIME) - CAST(r.hora_inicio AS TIME))) / 3600.0) as horasOcupadas " +
                    "FROM Reserva r JOIN Cancha c ON r.cancha_id = c.cancha_id " +
                    "WHERE c.sucursal_id = :sucursalId AND r.fecha BETWEEN :fechaDesde AND :fechaHasta " +
                    "AND r.estado_reserva NOT IN ('CANCELADO', 'REEMBOLSADO') " +
@@ -70,7 +99,13 @@ public interface ReservaRepository extends JpaRepository<Reserva, Integer>, JpaS
     @Query("SELECT count(r) FROM Reserva r WHERE r.cancha.sucursal.sucursalId = :sucursalId AND r.estadoReserva = :estado AND r.fecha = :fecha")
     long countBySucursalAndEstadoAndFecha(@Param("sucursalId") Integer sucursalId, @Param("estado") EstadoReserva estado, @Param("fecha") LocalDate fecha);
 
-    @Query(value = "SELECT COALESCE(SUM(DATEDIFF(minute, r.hora_inicio, r.hora_fin) / 60.0), 0) " +
+    // --- SQL Server (Comentado) ---
+    // @Query(value = "SELECT COALESCE(SUM(DATEDIFF(minute, r.hora_inicio, r.hora_fin) / 60.0), 0) " +
+    //                "FROM Reserva r " +
+    //                "WHERE r.fecha BETWEEN :fechaDesde AND :fechaHasta " +
+    //                "AND r.estado_reserva NOT IN ('CANCELADO', 'REEMBOLSADO')", nativeQuery = true)
+    // --- PostgreSQL ---
+    @Query(value = "SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (CAST(r.hora_fin AS TIME) - CAST(r.hora_inicio AS TIME))) / 3600.0), 0) " +
                    "FROM Reserva r " +
                    "WHERE r.fecha BETWEEN :fechaDesde AND :fechaHasta " +
                    "AND r.estado_reserva NOT IN ('CANCELADO', 'REEMBOLSADO')", nativeQuery = true)
