@@ -135,11 +135,13 @@ public class SucursalServiceImpl implements SucursalService {
 
     @Override
     public boolean hasSucursales(Integer empresaId) {
+
         return sucursalRepository.existsByEmpresaEmpresaId(empresaId);
     }
 
     @Override
     public boolean sucursalExists(Integer id) {
+
         return sucursalRepository.existsById(id);
     }
 

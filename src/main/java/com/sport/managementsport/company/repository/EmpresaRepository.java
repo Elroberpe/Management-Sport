@@ -10,5 +10,5 @@ import java.util.Optional;
 public interface EmpresaRepository extends JpaRepository<Empresa, Integer> {
     boolean existsByRazonSocial(String razonSocial);
     boolean existsByNombreComercial(String nombreComercial);
-    Optional<Empresa> findByNombreComercial(String nombreComercial);
+    boolean existsByNombreComercialAndEmpresaIdNot(String nombreComercial, Integer empresaId); // Nuevo método
 }

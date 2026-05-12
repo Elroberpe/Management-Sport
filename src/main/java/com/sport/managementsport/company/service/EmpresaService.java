@@ -13,8 +13,8 @@ public interface EmpresaService {
     List<EmpresaResponse> getAllEmpresas();
     EmpresaResponse updateEmpresa(Integer id, UpdateEmpresaRequest request);
     void deleteEmpresa(Integer id);
-    boolean empresaExists(Integer id);
 
-    // Nuevo método para uso interno
+    // metodos para uso interno
     Empresa findEmpresaEntityById(Integer id);
+    boolean empresaExists(Integer id);
 }

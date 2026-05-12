@@ -23,6 +23,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     private final EmpresaRepository empresaRepository;
     private final SucursalService sucursalService;
 
+    // Se mantiene @Lazy para evitar referencias circulares si las hay
     public EmpresaServiceImpl(EmpresaRepository empresaRepository, @Lazy SucursalService sucursalService) {
         this.empresaRepository = empresaRepository;
         this.sucursalService = sucursalService;
@@ -52,9 +53,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional(readOnly = true)
     public EmpresaResponse getEmpresaById(Integer id) {
-        return empresaRepository.findById(id)
-                .map(this::toEmpresaResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa no encontrada con id: " + id));
+        return toEmpresaResponse(findEmpresaEntityById(id));
     }
 
     @Override
@@ -70,12 +69,10 @@ public class EmpresaServiceImpl implements EmpresaService {
     public EmpresaResponse updateEmpresa(Integer id, UpdateEmpresaRequest request) {
         Empresa empresa = findEmpresaEntityById(id);
 
-        if (request.getNombreComercial() != null) {
-            empresaRepository.findByNombreComercial(request.getNombreComercial()).ifPresent(e -> {
-                if (!e.getEmpresaId().equals(id)) {
-                    throw new DuplicateResourceException("El nombre comercial '" + request.getNombreComercial() + "' ya está en uso.");
-                }
-            });
+        if (request.getNombreComercial() != null && !request.getNombreComercial().equals(empresa.getNombreComercial())) {
+            if (empresaRepository.existsByNombreComercialAndEmpresaIdNot(request.getNombreComercial(), id)) {
+                throw new DuplicateResourceException("El nombre comercial '" + request.getNombreComercial() + "' ya está en uso por otra empresa.");
+            }
             empresa.setNombreComercial(request.getNombreComercial());
         }
 
@@ -90,7 +87,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     @Transactional
     public void deleteEmpresa(Integer id) {
-        if (!empresaRepository.existsById(id)) {
+        if (!empresaExists(id)) {
             throw new ResourceNotFoundException("Empresa no encontrada con id: " + id);
         }
         if (sucursalService.hasSucursales(id)) {
