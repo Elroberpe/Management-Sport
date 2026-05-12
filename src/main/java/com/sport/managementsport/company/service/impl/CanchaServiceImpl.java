@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +40,7 @@ public class CanchaServiceImpl implements CanchaService {
         Cancha cancha = new Cancha();
         cancha.setSucursal(sucursal);
         cancha.setNombre(request.getNombre());
-        cancha.setPrecioHora(request.getPrecioHora());
+        cancha.asignarPrecioHora(request.getPrecioHora());
 
         Cancha savedCancha = canchaRepository.save(cancha);
         return toCanchaResponse(savedCancha);
@@ -49,8 +48,11 @@ public class CanchaServiceImpl implements CanchaService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CanchaResponse> getCanchaById(Integer id) {
-        return canchaRepository.findById(id).map(this::toCanchaResponse);
+    public CanchaResponse getCanchaById(Integer id) {
+        Cancha cancha= canchaRepository.findById(id)
+                .orElseThrow(()-> new ResourceNotFoundException("Cancha no encontrada con id: " + id));
+
+        return toCanchaResponse(cancha);
     }
 
     @Override
@@ -74,7 +76,7 @@ public class CanchaServiceImpl implements CanchaService {
             cancha.setNombre(request.getNombre());
         }
         if (request.getPrecioHora() != null) {
-            cancha.setPrecioHora(request.getPrecioHora());
+            cancha.asignarPrecioHora(request.getPrecioHora());
         }
 
         Cancha updatedCancha = canchaRepository.save(cancha);
@@ -101,16 +103,18 @@ public class CanchaServiceImpl implements CanchaService {
         canchaRepository.deleteById(id);
     }
 
+    //METODO fachada
+    //Metodos usados por otros servicios
     @Override
     @Transactional(readOnly = true)
     public List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId) {
-        if (!sucursalService.sucursalExists(sucursalId)) {
-            throw new ResourceNotFoundException("Sucursal no encontrada con id: " + sucursalId);
-        }
+        // NOTA: Como la sucursal delega en el CanchaService, el CanchaService debe
+        // encargarse de ir a BD para traer las canchas de esa sucursal
         return canchaRepository.findBySucursalSucursalId(sucursalId).stream()
                 .map(this::toCanchaResponse)
                 .collect(Collectors.toList());
     }
+
 
     @Override
     @Transactional(readOnly = true)

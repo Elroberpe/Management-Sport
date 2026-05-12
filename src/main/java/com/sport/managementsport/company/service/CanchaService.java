@@ -13,12 +13,13 @@ import java.util.Optional;
 public interface CanchaService {
 
     CanchaResponse createCancha(CreateCanchaRequest request);
-    Optional<CanchaResponse> getCanchaById(Integer id);
+    CanchaResponse getCanchaById(Integer id);
     List<CanchaResponse> getAllCanchas(Integer sucursalId, EstadoCancha estado);
     CanchaResponse updateCancha(Integer id, UpdateCanchaRequest request);
     CanchaResponse updateEstadoCancha(Integer id, UpdateEstadoCanchaRequest request);
     void deleteCancha(Integer id);
-    List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId);
+    List<CanchaResponse> getCanchasBySucursalId(Integer sucursalId); // <-- Faltaba exponerlo de nuevo en la interfaz
+
     Cancha findCanchaEntityById(Integer id);
     boolean canchaExists(Integer id);
 

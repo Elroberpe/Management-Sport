@@ -4,6 +4,7 @@ import com.sport.managementsport.company.dto.CreateSucursalRequest;
 import com.sport.managementsport.company.dto.SucursalResponse;
 import com.sport.managementsport.company.dto.UpdateSucursalRequest;
 import com.sport.managementsport.company.service.SucursalService;
+import com.sport.managementsport.company.dto.CanchaResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,13 +30,8 @@ public class SucursalController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<List<SucursalResponse>> getAllSucursales(@RequestParam(required = false) Integer empresaId) {
-        List<SucursalResponse> sucursales;
-        if (empresaId != null) {
-            sucursales = sucursalService.getSucursalesByEmpresaId(empresaId);
-        } else {
-            sucursales = sucursalService.getAllSucursales();
-        }
+    public ResponseEntity<List<SucursalResponse>> getAllSucursales(@RequestParam Integer empresaId) {
+        List<SucursalResponse> sucursales = sucursalService.getAllSucursales(empresaId);
         return ResponseEntity.ok(sucursales);
     }
 
@@ -44,6 +40,16 @@ public class SucursalController {
     public ResponseEntity<SucursalResponse> getSucursalById(@PathVariable Integer id) {
         SucursalResponse sucursal = sucursalService.getSucursalById(id);
         return ResponseEntity.ok(sucursal);
+    }
+
+    // Endpoint para obtener las canchas de una sucursal específica
+    @GetMapping("/{id}/canchas")
+    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<List<CanchaResponse>> getCanchasBySucursal(@PathVariable Integer id) {
+        // TODO: Asegurar que el usuario logueado (si es ADMIN/RECEPTIONIST) 
+        // solo pueda consultar las canchas de SU propia sucursal.
+        List<CanchaResponse> canchas = sucursalService.getCanchasBySucursalId(id);
+        return ResponseEntity.ok(canchas);
     }
 
     @PutMapping("/{id}")

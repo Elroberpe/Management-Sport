@@ -12,8 +12,8 @@ paths:
     get:
       tags:
         - Canchas
-      summary: "Listar todas las canchas"
-      description: "Obtiene una lista de todas las canchas, con filtros opcionales por sucursal y estado."
+      summary: "Listar todas las canchas (Solo SUPERADMIN)"
+      description: "Obtiene una lista de todas las canchas del sistema. Permite filtros opcionales por sucursal y estado. **Este endpoint solo es accesible para el rol SUPERADMIN.**"
       parameters:
         - name: sucursalId
           in: query
@@ -35,6 +35,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CanchaResponse'
+        '403':
+          description: "Acceso denegado. Se requiere rol SUPERADMIN."
     post:
       tags:
         - Canchas

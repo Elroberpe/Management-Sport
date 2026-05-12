@@ -12,9 +12,10 @@ import java.util.List;
 
 @Repository
 public interface CanchaRepository extends JpaRepository<Cancha, Integer>, JpaSpecificationExecutor<Cancha> {
+    List<Cancha> findBySucursalSucursalId(Integer sucursalId); // <-- Metodo restaurado
     boolean existsBySucursalSucursalId(Integer sucursalId);
     boolean existsByNombreAndSucursalSucursalId(String nombre, Integer sucursalId);
-    List<Cancha> findBySucursalSucursalId(Integer sucursalId);
+
 
     long countBySucursal_SucursalIdAndEstadoCanchaNot(Integer sucursalId, EstadoCancha estado);
     long countByEstadoCanchaNot(EstadoCancha estado);

@@ -12,11 +12,12 @@ paths:
     get:
       tags:
         - Sucursales
-      summary: "Listar todas las sucursales"
-      description: "Obtiene una lista de todas las sucursales registradas. Opcionalmente, se puede filtrar por empresa."
+      summary: "Listar todas las sucursales de una empresa"
+      description: "Obtiene una lista de todas las sucursales registradas para una empresa específica."
       parameters:
         - name: empresaId
           in: query
+          required: true
           description: "ID de la empresa para filtrar las sucursales."
           schema:
             type: integer
@@ -29,6 +30,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SucursalResponse'
+        '400':
+          description: "Falta el parámetro requerido empresaId."
     post:
       tags:
         - Sucursales
@@ -104,6 +107,31 @@ paths:
           description: "Sucursal no encontrada."
         '400':
           description: "Error de negocio (ej. la sucursal tiene dependencias)."
+
+  /sucursales/{id}/canchas:
+    get:
+      tags:
+        - Sucursales
+      summary: "Obtener las canchas de una sucursal"
+      description: "Recupera la lista de canchas asociadas a una sucursal específica."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID de la sucursal."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Lista de canchas obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../cancha-api.yaml#/components/schemas/CanchaResponse'
+        '404':
+          description: "Sucursal no encontrada."
 
   /sucursales/{id}/activar:
     patch:

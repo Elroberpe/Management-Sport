@@ -34,13 +34,13 @@ public class CanchaController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<CanchaResponse> getCanchaById(@PathVariable Integer id) {
-        return canchaService.getCanchaById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        CanchaResponse canchaResponse = canchaService.getCanchaById(id);
+        return ResponseEntity.ok(canchaResponse);
     }
 
+    // Solo el SUPERADMIN puede ver todas las canchas a nivel global o filtrar libremente
     @GetMapping
-    @PreAuthorize("hasAnyRole('RECEPTIONIST', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<List<CanchaResponse>> getAllCanchas(
             @RequestParam(required = false) Integer sucursalId,
             @RequestParam(required = false) EstadoCancha estado) {
