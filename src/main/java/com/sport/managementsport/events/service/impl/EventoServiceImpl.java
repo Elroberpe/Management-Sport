@@ -275,12 +275,17 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional
-    public void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado) {
+    public void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado, TipoTransaccion tipoTransaccionAnulada) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado con id: " + eventoId));
 
-        evento.setMontoPagado(evento.getMontoPagado().subtract(montoAnulado));
-        evento.setSaldoPendiente(evento.getSaldoPendiente().add(montoAnulado));
+        if (tipoTransaccionAnulada == TipoTransaccion.INGRESO) {
+            evento.setMontoPagado(evento.getMontoPagado().subtract(montoAnulado));
+            evento.setSaldoPendiente(evento.getSaldoPendiente().add(montoAnulado));
+        } else if (tipoTransaccionAnulada == TipoTransaccion.SALIDA) {
+            evento.setMontoPagado(evento.getMontoPagado().add(montoAnulado));
+            evento.setSaldoPendiente(evento.getSaldoPendiente().subtract(montoAnulado));
+        }
         
         eventoRepository.save(evento);
     }

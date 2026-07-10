@@ -1,5 +1,6 @@
 package com.sport.managementsport.events.service;
 
+import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.events.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,5 +18,5 @@ public interface EventoService {
     EventoResponse reprogramarEvento(Integer id, ReprogramarEventoRequest request);
 
     // Nuevo método para uso interno
-    void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado);
+    void revertirSaldosPorAnulacion(Integer eventoId, BigDecimal montoAnulado, TipoTransaccion tipoTransaccionAnulada);
 }

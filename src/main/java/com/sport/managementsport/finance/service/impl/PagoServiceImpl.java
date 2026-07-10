@@ -106,9 +106,9 @@ public class PagoServiceImpl implements PagoService {
         pagoRepository.save(pago);
 
         if (pago.getReserva() != null) {
-            reservaService.revertirSaldosPorAnulacion(pago.getReserva().getReservaId(), pago.getMonto());
+            reservaService.revertirSaldosPorAnulacion(pago.getReserva().getReservaId(), pago.getMonto(), pago.getTipoTransaccion());
         } else if (pago.getEvento() != null) {
-            eventoService.revertirSaldosPorAnulacion(pago.getEvento().getEventoId(), pago.getMonto());
+            eventoService.revertirSaldosPorAnulacion(pago.getEvento().getEventoId(), pago.getMonto(), pago.getTipoTransaccion());
         }
     }
 

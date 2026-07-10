@@ -212,6 +212,9 @@ public class ReservaServiceImpl implements ReservaService {
                     .tipoTransaccion(TipoTransaccion.SALIDA)
                     .nota("Reembolso por cancelación con política aplicada. Horas restantes: " + horasRestantes)
                     .build());
+            
+            reserva.setMontoPagado(reserva.getMontoPagado().subtract(montoAReembolsar));
+            reserva.setSaldoPendiente(reserva.getMontoTotal().subtract(reserva.getMontoPagado()));
             reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
         } else {
             reserva.setEstadoReserva(EstadoReserva.CANCELADO);
@@ -277,11 +280,19 @@ public class ReservaServiceImpl implements ReservaService {
         Reserva reserva = reservaRepository.findById(reservaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservaId));
 
-        if (reserva.getSaldoPendiente().compareTo(BigDecimal.ZERO) >= 0) {
+        boolean esCreditoPorReprogramacion = reserva.getSaldoPendiente().compareTo(BigDecimal.ZERO) < 0;
+        boolean esDeudaPorCancelacion = reserva.getEstadoReserva() == EstadoReserva.CANCELADO && reserva.getMontoPagado().compareTo(BigDecimal.ZERO) > 0;
+
+        if (!esCreditoPorReprogramacion && !esDeudaPorCancelacion) {
             throw new BusinessRuleException("Esta reserva no tiene un crédito a favor para reembolsar.");
         }
 
-        BigDecimal creditoDisponible = reserva.getSaldoPendiente().abs();
+        BigDecimal creditoDisponible;
+        if (esDeudaPorCancelacion) {
+            creditoDisponible = reserva.getMontoPagado();
+        } else {
+            creditoDisponible = reserva.getSaldoPendiente().abs();
+        }
 
         if (request.getMonto().compareTo(creditoDisponible) > 0) {
             throw new BusinessRuleException("El monto a reembolsar (" + request.getMonto() +
@@ -297,7 +308,11 @@ public class ReservaServiceImpl implements ReservaService {
                 .build());
 
         reserva.setMontoPagado(reserva.getMontoPagado().subtract(request.getMonto()));
-        reserva.setSaldoPendiente(reserva.getSaldoPendiente().add(request.getMonto()));
+        reserva.setSaldoPendiente(reserva.getMontoTotal().subtract(reserva.getMontoPagado()));
+        
+        if (reserva.getEstadoReserva() == EstadoReserva.CANCELADO && reserva.getMontoPagado().compareTo(BigDecimal.ZERO) <= 0) {
+            reserva.setEstadoReserva(EstadoReserva.REEMBOLSADO);
+        }
 
         Reserva reservaActualizada = reservaRepository.save(reserva);
         return toReservaResponse(reservaActualizada);
@@ -403,17 +418,24 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     @Transactional
-    public void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado) {
+    public void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado, TipoTransaccion tipoTransaccionAnulada) {
         Reserva reserva = reservaRepository.findById(reservaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + reservaId));
 
-        reserva.setMontoPagado(reserva.getMontoPagado().subtract(montoAnulado));
-        reserva.setSaldoPendiente(reserva.getSaldoPendiente().add(montoAnulado));
-
-        if (reserva.getEstadoReserva() == EstadoReserva.PAGADA) {
-            reserva.setEstadoReserva(EstadoReserva.PENDIENTE);
+        if (tipoTransaccionAnulada == TipoTransaccion.INGRESO) {
+            reserva.setMontoPagado(reserva.getMontoPagado().subtract(montoAnulado));
+        } else if (tipoTransaccionAnulada == TipoTransaccion.SALIDA) {
+            reserva.setMontoPagado(reserva.getMontoPagado().add(montoAnulado));
         }
         
+        reserva.setSaldoPendiente(reserva.getMontoTotal().subtract(reserva.getMontoPagado()));
+
+        if (reserva.getEstadoReserva() == EstadoReserva.PAGADA && reserva.getSaldoPendiente().compareTo(BigDecimal.ZERO) > 0) {
+            reserva.setEstadoReserva(EstadoReserva.PENDIENTE);
+        } else if (reserva.getEstadoReserva() == EstadoReserva.REEMBOLSADO) {
+            reserva.setEstadoReserva(EstadoReserva.CANCELADO);
+        }
+
         reservaRepository.save(reserva);
     }
 

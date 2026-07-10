@@ -3,6 +3,7 @@ package com.sport.managementsport.booking.service;
 import com.sport.managementsport.booking.domain.Reserva;
 import com.sport.managementsport.booking.dto.*;
 import com.sport.managementsport.common.enums.EstadoReserva;
+import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.events.domain.Evento;
 import org.springframework.data.domain.Page;
@@ -34,5 +35,5 @@ public interface ReservaService {
     void validateHorarioDisponible(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer eventoIdToIgnore);
     void validateHorarioDisponibleIgnoringSelf(Integer canchaId, LocalDateTime startDateTime, LocalDateTime endDateTime, Integer reservaIdToIgnore);
     Reserva createReservaForEvento(Integer canchaId, Integer clienteId, LocalDateTime startDateTime, LocalDateTime endDateTime, Evento evento);
-    void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado);
+    void revertirSaldosPorAnulacion(Integer reservaId, BigDecimal montoAnulado, TipoTransaccion tipoTransaccionAnulada);
 }
