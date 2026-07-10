@@ -6,6 +6,7 @@ import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.finance.dto.AnularPagoRequest;
 import com.sport.managementsport.finance.dto.CreatePagoRequest;
 import com.sport.managementsport.finance.dto.PagoResponse;
+import com.sport.managementsport.finance.dto.PagoStatsResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -20,6 +21,7 @@ public interface PagoService {
     Page<PagoResponse> getAllPagos(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId, Pageable pageable);
     void anularPago(Integer id, AnularPagoRequest request);
     KpiResponse getIngresosAnuales(Integer sucursalId);
+    PagoStatsResponse getPagosStats(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId);
 
     // Nuevo método para la reprogramación
     void reasignarPagos(Reserva reservaOriginal, Reserva nuevaReserva);

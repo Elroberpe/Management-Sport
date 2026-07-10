@@ -1,7 +1,9 @@
 package com.sport.managementsport.finance.repository;
 
+import com.sport.managementsport.common.enums.MetodoPago;
 import com.sport.managementsport.common.enums.TipoTransaccion;
 import com.sport.managementsport.finance.domain.Pago;
+import com.sport.managementsport.finance.dto.PagoStatsResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -9,10 +11,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface PagoRepository extends JpaRepository<Pago, Integer>, JpaSpecificationExecutor<Pago> {
+public interface PagoRepository extends JpaRepository<Pago, Integer>, JpaSpecificationExecutor<Pago>, PagoRepositoryCustom {
     List<Pago> findByReservaReservaId(Integer reservaId);
     List<Pago> findByEventoEventoId(Integer eventoId);
 

@@ -4,6 +4,7 @@ import com.sport.managementsport.common.enums.MetodoPago;
 import com.sport.managementsport.dashboard.dto.KpiResponse;
 import com.sport.managementsport.finance.dto.AnularPagoRequest;
 import com.sport.managementsport.finance.dto.PagoResponse;
+import com.sport.managementsport.finance.dto.PagoStatsResponse;
 import com.sport.managementsport.finance.service.PagoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,17 @@ public class PagoController {
             @PageableDefault(size = 50, sort = "fecha") Pageable pageable) {
         Page<PagoResponse> pagos = pagoService.getAllPagos(desde, hasta, metodo, sucursalId, pageable);
         return ResponseEntity.ok(pagos);
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<PagoStatsResponse> getPagosStats(
+            @RequestParam(required = false) LocalDate desde,
+            @RequestParam(required = false) LocalDate hasta,
+            @RequestParam(required = false) MetodoPago metodo,
+            @RequestParam(required = false) Integer sucursalId) {
+        PagoStatsResponse stats = pagoService.getPagosStats(desde, hasta, metodo, sucursalId);
+        return ResponseEntity.ok(stats);
     }
 
     @GetMapping("/{id}")

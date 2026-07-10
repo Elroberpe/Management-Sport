@@ -31,6 +31,34 @@ components:
           type: number
           example: 52340.50
 
+    PagoStatsResponse:
+      type: object
+      properties:
+        totalIngresos:
+          type: number
+          format: double
+          example: 1500.75
+        totalSalidas:
+          type: number
+          format: double
+          example: 300.50
+        totalMontoAnulado:
+          type: number
+          format: double
+          example: 500.00
+        totalPagosIngreso:
+          type: integer
+          format: int64
+          example: 10
+        totalPagosSalida:
+          type: integer
+          format: int64
+          example: 2
+        totalPagosAnulados:
+          type: integer
+          format: int64
+          example: 6
+
     PagoResponse:
       type: object
       properties:
@@ -132,6 +160,49 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/PagoResponse'
+        '403':
+          description: "Acceso denegado."
+
+  /pagos/stats:
+    get:
+      tags:
+        - Pagos - Estadísticas
+      summary: "Obtener estadísticas de pagos"
+      description: "Calcula y devuelve las estadísticas de pagos (ingresos, salidas, anulados) basadas en los filtros proporcionados. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: desde
+          in: query
+          description: "Fecha de inicio del rango de búsqueda."
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: hasta
+          in: query
+          description: "Fecha de fin del rango de búsqueda."
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - name: metodo
+          in: query
+          description: "Filtrar por método de pago."
+          schema:
+            $ref: '#/components/schemas/MetodoPago'
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Estadísticas calculadas con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoStatsResponse'
         '403':
           description: "Acceso denegado."
 

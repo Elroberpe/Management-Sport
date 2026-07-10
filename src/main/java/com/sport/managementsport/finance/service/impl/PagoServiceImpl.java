@@ -13,6 +13,7 @@ import com.sport.managementsport.finance.domain.Pago;
 import com.sport.managementsport.finance.dto.AnularPagoRequest;
 import com.sport.managementsport.finance.dto.CreatePagoRequest;
 import com.sport.managementsport.finance.dto.PagoResponse;
+import com.sport.managementsport.finance.dto.PagoStatsResponse;
 import com.sport.managementsport.finance.repository.PagoRepository;
 import com.sport.managementsport.finance.repository.PagoSpecification;
 import com.sport.managementsport.finance.service.PagoService;
@@ -133,6 +134,12 @@ public class PagoServiceImpl implements PagoService {
             total = pagoRepository.sumByTipoTransaccionAndYearAndSucursal(TipoTransaccion.INGRESO, currentYear, sucursalId);
         }
         return new KpiResponse(total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagoStatsResponse getPagosStats(LocalDate desde, LocalDate hasta, MetodoPago metodo, Integer sucursalId) {
+        return pagoRepository.getPagoStats(desde, hasta, metodo, sucursalId);
     }
 
     private PagoResponse toPagoResponse(Pago pago) {
