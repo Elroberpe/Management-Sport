@@ -7,249 +7,12 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /reservas:
-    get:
-      tags:
-        - Reservas
-      summary: "Listar y filtrar reservas"
-      description: "Obtiene una lista paginada de reservas, con filtros opcionales."
-      parameters:
-        - name: fechaDesde
-          in: query
-          description: "Fecha de inicio del rango de búsqueda (inclusivo)."
-          schema:
-            type: string
-            format: date
-            example: "2024-10-28"
-        - name: fechaHasta
-          in: query
-          description: "Fecha de fin del rango de búsqueda (inclusivo)."
-          schema:
-            type: string
-            format: date
-            example: "2024-10-30"
-        - name: canchaId
-          in: query
-          schema:
-            type: integer
-        - name: clienteId
-          in: query
-          schema:
-            type: integer
-        - name: sucursalId
-          in: query
-          description: "Filtra las reservas por la sucursal a la que pertenecen."
-          schema:
-            type: integer
-        - name: estadoReserva
-          in: query
-          schema:
-            $ref: '#/components/schemas/EstadoReserva'
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
-        - name: sort
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lista de reservas obtenida con éxito."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ReservaResponse'
-
-  /reservas/stats/completadas-hoy:
-    get:
-      tags:
-        - Reservas - Estadísticas
-      summary: "Obtener total de reservas completadas hoy"
-      description: "Devuelve el número total de reservas cuyo estado es 'COMPLETADO' y cuya fecha es la del día actual. Puede ser filtrado por sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Total de reservas completadas hoy."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KpiResponse'
-
-  /reservas/{id}:
-    parameters:
-      - $ref: '#/components/parameters/ReservaId'
-    get:
-      tags:
-        - Reservas
-      summary: "Obtener una reserva por su ID"
-      responses:
-        '200':
-          description: "Detalles de la reserva."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '404':
-          description: "Reserva no encontrada."
-    put:
-      tags:
-        - Reservas
-      summary: "Actualizar datos administrativos de una reserva"
-      description: "Permite actualizar campos limitados como el cliente asociado."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateReservaRequest'
-      responses:
-        '200':
-          description: "Reserva actualizada."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '404':
-          description: "Reserva no encontrada."
-    delete:
-      tags:
-        - Reservas
-      summary: "Eliminar una reserva"
-      description: "Elimina una reserva solo si no tiene pagos asociados. Se recomienda cancelar en su lugar."
-      responses:
-        '204':
-          description: "Reserva eliminada."
-        '400':
-          description: "La reserva tiene pagos y no puede ser eliminada."
-        '404':
-          description: "Reserva no encontrada."
-
-  /reservas/{id}/pagos:
-    parameters:
-      - $ref: '#/components/parameters/ReservaId'
-    get:
-      tags:
-        - Pagos
-      summary: "Obtener historial de pagos de una reserva"
-      responses:
-        '200':
-          description: "Lista de pagos de la reserva."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PagoResponse'
-    post:
-      tags:
-        - Pagos
-      summary: "Añadir un pago a una reserva"
-      description: "Registra un pago (parcial o total). El sistema actualiza el saldo y el estado de la reserva."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddPagoToReservaRequest'
-      responses:
-        '200':
-          description: "Pago registrado y reserva actualizada."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '400':
-          description: "El monto excede el saldo o la reserva está cancelada."
-
-  /reservas/{id}/cancelar:
-    parameters:
-      - $ref: '#/components/parameters/ReservaId'
-    patch:
-      tags:
-        - Reservas
-      summary: "Cancelar una reserva"
-      description: "Cancela una reserva. Si la reserva tenía pagos, se genera una transacción de reembolso y el estado cambia a REEMBOLSADO."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancelReservaRequest'
-      responses:
-        '200':
-          description: "Reserva cancelada/reembolsada."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '400':
-          description: "La reserva ya está en un estado final."
-
-  /reservas/{id}/reprogramar:
-    parameters:
-      - $ref: '#/components/parameters/ReservaId'
-    post:
-      tags:
-        - Reservas
-      summary: "Reprogramar una reserva"
-      description: "Cancela la reserva original y crea una nueva con el nuevo horario, transfiriendo los pagos existentes."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReprogramarReservaRequest'
-      responses:
-        '200':
-          description: "Reserva reprogramada con éxito. La respuesta contiene la nueva reserva."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '400':
-          description: "El nuevo horario no está disponible."
-
-  /reservas/{id}/reembolsos:
-    post:
-      tags:
-        - Pagos
-      summary: "Registrar un reembolso manual"
-      description: "Registra una transacción de SALIDA para una reserva que tiene un crédito a favor (saldo negativo), ajustando los saldos a cero. Se usa después de una reprogramación a un costo menor."
-      parameters:
-        - $ref: '#/components/parameters/ReservaId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateReembolsoRequest'
-      responses:
-        '200':
-          description: "Reembolso registrado y saldos de la reserva actualizados."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReservaResponse'
-        '400':
-          description: "La reserva no tiene un crédito a favor o el monto del reembolso es inválido."
-        '404':
-          description: "Reserva no encontrada."
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     ReservaId:
       name: id
@@ -258,7 +21,6 @@ components:
       description: "ID de la reserva a operar."
       schema:
         type: integer
-
   schemas:
     EstadoReserva:
       type: string
@@ -363,3 +125,275 @@ components:
         tipoTransaccion: { $ref: '#/components/schemas/TipoTransaccion' }
         referencia: { type: string, nullable: true }
         nota: { type: string, nullable: true }
+
+paths:
+  /reservas:
+    get:
+      tags:
+        - Reservas
+      summary: "Listar y filtrar reservas"
+      description: "Obtiene una lista paginada de reservas. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - { name: fechaDesde, in: query, schema: { type: string, format: date } }
+        - { name: fechaHasta, in: query, schema: { type: string, format: date } }
+        - { name: canchaId, in: query, schema: { type: integer } }
+        - { name: clienteId, in: query, schema: { type: integer } }
+        - { name: sucursalId, in: query, schema: { type: integer } }
+        - { name: estadoReserva, in: query, schema: { $ref: '#/components/schemas/EstadoReserva' } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+        - { name: sort, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: "Lista de reservas obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReservaResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Reservas
+      summary: "Crear una nueva reserva"
+      description: "Crea una nueva reserva regular. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservaRequest'
+      responses:
+        '201':
+          description: "Reserva creada con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '400':
+          description: "Datos inválidos o conflicto de horario."
+        '403':
+          description: "Acceso denegado."
+
+  /reservas/stats/completadas-hoy:
+    get:
+      tags:
+        - Reservas - Estadísticas
+      summary: "Obtener total de reservas completadas hoy"
+      description: "Devuelve el número total de reservas completadas hoy. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar. Si se omite, se calcula el total."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Total de reservas completadas hoy."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+        '403':
+          description: "Acceso denegado."
+
+  /reservas/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ReservaId'
+    get:
+      tags:
+        - Reservas
+      summary: "Obtener una reserva por su ID"
+      description: "Recupera los detalles de una reserva. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles de la reserva."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Reserva no encontrada."
+    put:
+      tags:
+        - Reservas
+      summary: "Actualizar datos de una reserva"
+      description: "Permite actualizar campos como el cliente asociado. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReservaRequest'
+      responses:
+        '200':
+          description: "Reserva actualizada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Reserva no encontrada."
+    delete:
+      tags:
+        - Reservas
+      summary: "Eliminar una reserva"
+      description: "Elimina una reserva solo si no tiene pagos. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: "Reserva eliminada."
+        '400':
+          description: "La reserva tiene pagos y no puede ser eliminada."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Reserva no encontrada."
+
+  /reservas/{id}/pagos:
+    parameters:
+      - $ref: '#/components/parameters/ReservaId'
+    get:
+      tags:
+        - Pagos
+      summary: "Obtener historial de pagos de una reserva"
+      description: "Recupera todos los pagos de una reserva. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Lista de pagos de la reserva."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PagoResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Pagos
+      summary: "Añadir un pago a una reserva"
+      description: "Registra un pago para una reserva. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPagoToReservaRequest'
+      responses:
+        '200':
+          description: "Pago registrado y reserva actualizada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '400':
+          description: "El monto excede el saldo o la reserva está cancelada."
+        '403':
+          description: "Acceso denegado."
+
+  /reservas/{id}/cancelar:
+    parameters:
+      - $ref: '#/components/parameters/ReservaId'
+    patch:
+      tags:
+        - Reservas
+      summary: "Cancelar una reserva"
+      description: "Cancela una reserva. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelReservaRequest'
+      responses:
+        '200':
+          description: "Reserva cancelada/reembolsada."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '400':
+          description: "La reserva ya está en un estado final."
+        '403':
+          description: "Acceso denegado."
+
+  /reservas/{id}/reprogramar:
+    parameters:
+      - $ref: '#/components/parameters/ReservaId'
+    post:
+      tags:
+        - Reservas
+      summary: "Reprogramar una reserva"
+      description: "Crea una nueva reserva con el nuevo horario. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReprogramarReservaRequest'
+      responses:
+        '200':
+          description: "Reserva reprogramada con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '400':
+          description: "El nuevo horario no está disponible."
+        '403':
+          description: "Acceso denegado."
+
+  /reservas/{id}/reembolsos:
+    post:
+      tags:
+        - Pagos
+      summary: "Registrar un reembolso manual"
+      description: "Registra una transacción de SALIDA para una reserva con crédito a favor. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReembolsoRequest'
+      responses:
+        '200':
+          description: "Reembolso registrado y saldos actualizados."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaResponse'
+        '400':
+          description: "La reserva no tiene un crédito a favor."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Reserva no encontrada."

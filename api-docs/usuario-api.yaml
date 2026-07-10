@@ -7,143 +7,6 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /usuarios:
-    get:
-      tags:
-        - Usuarios
-      summary: "Listar usuarios con filtrado por rol"
-      description: |
-        Obtiene una lista paginada de usuarios. El resultado varía según el rol del usuario autenticado:
-        - **SUPERADMIN**: Ve todos los usuarios del sistema.
-        - **ADMIN**: Ve únicamente los usuarios de su propia sucursal.
-        - **RECEPCIONISTA**: No tiene acceso a este endpoint.
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Size'
-        - $ref: '#/components/parameters/Sort'
-      responses:
-        '200':
-          description: "Lista de usuarios obtenida con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageableUsuarioResponse'
-        '403':
-          description: "Acceso denegado."
-    post:
-      tags:
-        - Usuarios
-      summary: "Crear un nuevo usuario"
-      description: "Registra un nuevo usuario. Un SUPERADMIN puede crear ADMINS y RECEPCIONISTAS. Un ADMIN solo puede crear RECEPCIONISTAS."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUsuarioRequest'
-      responses:
-        '201':
-          description: "Usuario creado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioResponse'
-        '400':
-          description: "Datos de entrada inválidos."
-        '403':
-          description: "Acceso denegado."
-
-  /usuarios/{id}:
-    parameters:
-      - $ref: '#/components/parameters/UserId'
-    get:
-      tags:
-        - Usuarios
-      summary: "Obtener un usuario por su ID"
-      description: "Recupera los detalles de un usuario. Un usuario puede ver su propio perfil. ADMIN/SUPERADMIN pueden ver cualquier perfil."
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: "Detalles del usuario."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioResponse'
-        '403':
-          description: "Acceso denegado."
-        '404':
-          description: "Usuario no encontrado."
-    put:
-      tags:
-        - Usuarios
-      summary: "Actualizar datos de un usuario"
-      description: "Actualiza datos de un usuario. Un usuario puede actualizar su propio perfil. ADMIN/SUPERADMIN pueden actualizar a otros."
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUsuarioRequest'
-      responses:
-        '200':
-          description: "Usuario actualizado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioResponse'
-        '403':
-          description: "Acceso denegado."
-        '404':
-          description: "Usuario no encontrado."
-    delete:
-      tags:
-        - Usuarios
-      summary: "Eliminar un usuario"
-      description: "Elimina un usuario por su ID. Solo ADMIN/SUPERADMIN pueden realizar esta acción."
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: "Usuario eliminado con éxito."
-        '403':
-          description: "Acceso denegado."
-        '404':
-          description: "Usuario no encontrado."
-
-  /usuarios/{id}/password:
-    patch:
-      tags:
-        - Usuarios
-      summary: "Cambiar la contraseña de un usuario"
-      description: "Permite a un usuario cambiar su propia contraseña. ADMIN/SUPERADMIN también pueden cambiar la de otros."
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
-      responses:
-        '204':
-          description: "Contraseña cambiada con éxito."
-        '400':
-          description: "La contraseña actual es incorrecta."
-        '403':
-          description: "Acceso denegado."
-        '404':
-          description: "Usuario no encontrado."
-
 components:
   securitySchemes:
     bearerAuth:
@@ -230,3 +93,139 @@ components:
         first: { type: boolean }
         numberOfElements: { type: integer }
         empty: { type: boolean }
+
+paths:
+  /usuarios:
+    get:
+      tags:
+        - Usuarios
+      summary: "Listar usuarios"
+      description: |
+        Obtiene una lista paginada de usuarios. Accesible para `ADMIN` y `SUPERADMIN`.
+        - **SUPERADMIN**: Ve todos los usuarios del sistema.
+        - **ADMIN**: Ve únicamente los usuarios de su propia sucursal.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: "Lista de usuarios obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageableUsuarioResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Usuarios
+      summary: "Crear un nuevo usuario"
+      description: "Registra un nuevo usuario. Un `SUPERADMIN` puede crear `ADMIN` y `RECEPCIONISTA`. Un `ADMIN` solo puede crear `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUsuarioRequest'
+      responses:
+        '201':
+          description: "Usuario creado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioResponse'
+        '400':
+          description: "Datos de entrada inválidos."
+        '403':
+          description: "Acceso denegado."
+
+  /usuarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags:
+        - Usuarios
+      summary: "Obtener un usuario por su ID"
+      description: "Recupera los detalles de un usuario. `ADMIN` y `SUPERADMIN` pueden ver cualquier perfil. Un `RECEPCIONISTA` solo puede ver su propio perfil."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles del usuario."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Usuario no encontrado."
+    put:
+      tags:
+        - Usuarios
+      summary: "Actualizar datos de un usuario"
+      description: "Actualiza datos de un usuario. `ADMIN` y `SUPERADMIN` pueden actualizar a otros. Un `RECEPCIONISTA` solo puede actualizar su propio perfil."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUsuarioRequest'
+      responses:
+        '200':
+          description: "Usuario actualizado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Usuario no encontrado."
+    delete:
+      tags:
+        - Usuarios
+      summary: "Eliminar un usuario"
+      description: "Elimina un usuario por su ID. Solo `ADMIN` y `SUPERADMIN` pueden realizar esta acción."
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: "Usuario eliminado con éxito."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Usuario no encontrado."
+
+  /usuarios/{id}/password:
+    patch:
+      tags:
+        - Usuarios
+      summary: "Cambiar la contraseña de un usuario"
+      description: "Permite a un usuario cambiar su propia contraseña. `ADMIN` y `SUPERADMIN` también pueden cambiar la de otros usuarios de su ámbito."
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: "Contraseña cambiada con éxito."
+        '400':
+          description: "La contraseña actual es incorrecta."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Usuario no encontrado."

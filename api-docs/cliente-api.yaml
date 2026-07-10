@@ -7,152 +7,12 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /clientes:
-    get:
-      tags:
-        - Clientes
-      summary: "Listar y buscar clientes"
-      description: "Obtiene una lista paginada de clientes. Permite filtrar por nombre o documento."
-      parameters:
-        - name: nombre
-          in: query
-          description: "Nombre del cliente para buscar (búsqueda parcial)."
-          schema:
-            type: string
-        - name: documento
-          in: query
-          description: "Número de documento del cliente para buscar (búsqueda parcial)."
-          schema:
-            type: string
-        - name: page
-          in: query
-          description: "Número de la página a obtener."
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          description: "Número de clientes por página."
-          schema:
-            type: integer
-            default: 20
-        - name: sort
-          in: query
-          description: "Criterio de ordenación (ej. 'nombre,asc' o 'documento,desc')."
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lista de clientes obtenida con éxito."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ClienteResponse'
-                  # ... (otras propiedades de paginación)
-    post:
-      tags:
-        - Clientes
-      summary: "Crear un nuevo cliente"
-      description: "Registra un nuevo cliente en el sistema."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateClienteRequest'
-      responses:
-        '201':
-          description: "Cliente creado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '400':
-          description: "Datos de entrada inválidos (ej. documento duplicado)."
-
-  /clientes/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del cliente a operar."
-        schema:
-          type: integer
-    get:
-      tags:
-        - Clientes
-      summary: "Obtener un cliente por su ID"
-      description: "Recupera los detalles de un cliente específico."
-      responses:
-        '200':
-          description: "Detalles del cliente."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '404':
-          description: "Cliente no encontrado."
-    put:
-      tags:
-        - Clientes
-      summary: "Actualizar un cliente existente"
-      description: "Actualiza los datos de un cliente. Solo se modifican los campos proporcionados."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateClienteRequest'
-      responses:
-        '200':
-          description: "Cliente actualizado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '404':
-          description: "Cliente no encontrado."
-    delete:
-      tags:
-        - Clientes
-      summary: "Eliminar un cliente"
-      description: "Elimina un cliente por su ID."
-      responses:
-        '204':
-          description: "Cliente eliminado con éxito."
-        '404':
-          description: "Cliente no encontrado."
-
-  /clientes/documento/{documento}:
-    get:
-      tags:
-        - Clientes
-      summary: "Buscar un cliente por su número de documento"
-      description: "Obtiene los detalles de un cliente buscando por su número de documento exacto."
-      parameters:
-        - name: documento
-          in: path
-          required: true
-          description: "Número de documento exacto del cliente."
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Cliente encontrado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '404':
-          description: "Cliente no encontrado."
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     ClienteResponse:
       type: object
@@ -213,3 +73,213 @@ components:
         telefono:
           type: string
           example: "999888777"
+
+paths:
+  /clientes:
+    get:
+      tags:
+        - Clientes
+      summary: "Listar y buscar clientes"
+      description: "Obtiene una lista paginada de clientes. Permite filtrar por nombre o documento. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: nombre
+          in: query
+          description: "Nombre del cliente para buscar (búsqueda parcial)."
+          schema:
+            type: string
+        - name: documento
+          in: query
+          description: "Número de documento del cliente para buscar (búsqueda parcial)."
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: "Número de la página a obtener."
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: "Número de clientes por página."
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          description: "Criterio de ordenación (ej. 'nombre,asc')."
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Lista de clientes obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClienteResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Clientes
+      summary: "Crear un nuevo cliente"
+      description: "Registra un nuevo cliente en el sistema. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClienteRequest'
+      responses:
+        '201':
+          description: "Cliente creado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '400':
+          description: "Datos de entrada inválidos (ej. documento duplicado)."
+        '403':
+          description: "Acceso denegado."
+
+  /clientes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del cliente a operar."
+        schema:
+          type: integer
+    get:
+      tags:
+        - Clientes
+      summary: "Obtener un cliente por su ID"
+      description: "Recupera los detalles de un cliente específico. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles del cliente."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Cliente no encontrado."
+    put:
+      tags:
+        - Clientes
+      summary: "Actualizar un cliente existente"
+      description: "Actualiza los datos de un cliente. Solo se modifican los campos proporcionados. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClienteRequest'
+      responses:
+        '200':
+          description: "Cliente actualizado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Cliente no encontrado."
+    delete:
+      tags:
+        - Clientes
+      summary: "Eliminar un cliente"
+      description: "Elimina un cliente por su ID. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: "Cliente eliminado con éxito."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Cliente no encontrado."
+
+  /clientes/documento/{documento}:
+    get:
+      tags:
+        - Clientes
+      summary: "Buscar un cliente por su número de documento"
+      description: "Obtiene los detalles de un cliente buscando por su número de documento exacto. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: documento
+          in: path
+          required: true
+          description: "Número de documento exacto del cliente."
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Cliente encontrado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Cliente no encontrado."
+
+  /clientes/search:
+    get:
+      tags:
+        - Clientes
+      summary: "Buscar clientes por un término general"
+      description: "Busca clientes cuyo nombre o documento coincida con el término de búsqueda. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: "Término de búsqueda para nombre o documento."
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: "Número de la página a obtener."
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: "Número de clientes por página."
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: "Lista de clientes encontrada."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClienteResponse'
+        '403':
+          description: "Acceso denegado."

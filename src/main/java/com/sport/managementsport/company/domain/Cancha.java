@@ -3,7 +3,10 @@ package com.sport.managementsport.company.domain;
 import com.sport.managementsport.common.domain.AuditableEntity;
 import com.sport.managementsport.common.enums.EstadoCancha;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -31,16 +34,6 @@ public class Cancha extends AuditableEntity {
     @Column(name = "estado_cancha", nullable = false, length = 20)
     private EstadoCancha estadoCancha = EstadoCancha.DISPONIBLE;
 
-    @Setter(AccessLevel.PRIVATE)
     @Column(name = "precio_hora", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioHora;
-
-    public void asignarPrecioHora(BigDecimal newPrecioHora){
-        if(newPrecioHora== null || newPrecioHora.compareTo(BigDecimal.ZERO) <= 0){
-            throw new IllegalArgumentException("El precio por hora debe ser mayor que cero.");
-
-        }
-
-        this.precioHora = newPrecioHora;
-    }
 }

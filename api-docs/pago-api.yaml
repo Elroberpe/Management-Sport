@@ -7,136 +7,12 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /pagos:
-    get:
-      tags:
-        - Pagos
-      summary: "Obtener historial financiero global"
-      description: "Obtiene una lista paginada de todos los pagos registrados en el sistema, con filtros opcionales."
-      parameters:
-        - name: desde
-          in: query
-          description: "Fecha de inicio del rango de búsqueda."
-          schema:
-            type: string
-            format: date
-            example: "2024-01-01"
-        - name: hasta
-          in: query
-          description: "Fecha de fin del rango de búsqueda."
-          schema:
-            type: string
-            format: date
-            example: "2024-12-31"
-        - name: metodo
-          in: query
-          description: "Filtrar por método de pago."
-          schema:
-            $ref: '#/components/schemas/MetodoPago'
-        - name: sucursalId
-          in: query
-          description: "Filtra los pagos por la sucursal a la que pertenecen (a través de la reserva o evento)."
-          schema:
-            type: integer
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 50
-        - name: sort
-          in: query
-          schema:
-            type: string
-            default: "fecha,desc"
-      responses:
-        '200':
-          description: "Historial de pagos obtenido con éxito."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/PagoResponse'
-
-  /pagos/stats/ingresos-anuales:
-    get:
-      tags:
-        - Pagos - Estadísticas
-      summary: "Obtener total de ingresos en el año actual"
-      description: "Devuelve la suma total de todas las transacciones de tipo 'INGRESO' para el año en curso. Puede ser filtrado por sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Total de ingresos del año."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KpiResponse'
-
-  /pagos/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del pago a operar."
-        schema:
-          type: integer
-    get:
-      tags:
-        - Pagos
-      summary: "Obtener el detalle de un pago"
-      description: "Recupera los detalles de un registro de pago específico por su ID."
-      responses:
-        '200':
-          description: "Detalles del pago."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagoResponse'
-        '404':
-          description: "Pago no encontrado."
-
-  /pagos/{id}/anular:
-    patch:
-      tags:
-        - Pagos
-      summary: "Anular un pago"
-      description: "Marca un pago como ANULADO y revierte los montos correspondientes en la reserva o evento asociado."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnularPagoRequest'
-      responses:
-        '204':
-          description: "Pago anulado con éxito."
-        '400':
-          description: "El pago ya ha sido anulado previamente."
-        '404':
-          description: "Pago no encontrado."
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     MetodoPago:
       type: string
@@ -200,3 +76,142 @@ components:
           type: string
           maxLength: 250
           example: "Pago duplicado por error."
+
+paths:
+  /pagos:
+    get:
+      tags:
+        - Pagos
+      summary: "Obtener historial financiero global"
+      description: "Obtiene una lista paginada de todos los pagos registrados. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: desde
+          in: query
+          description: "Fecha de inicio del rango de búsqueda."
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: hasta
+          in: query
+          description: "Fecha de fin del rango de búsqueda."
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - name: metodo
+          in: query
+          description: "Filtrar por método de pago."
+          schema:
+            $ref: '#/components/schemas/MetodoPago'
+        - name: sucursalId
+          in: query
+          description: "Filtra los pagos por la sucursal a la que pertenecen."
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "fecha,desc" }
+      responses:
+        '200':
+          description: "Historial de pagos obtenido con éxito."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PagoResponse'
+        '403':
+          description: "Acceso denegado."
+
+  /pagos/stats/ingresos-anuales:
+    get:
+      tags:
+        - Pagos - Estadísticas
+      summary: "Obtener total de ingresos en el año actual"
+      description: "Devuelve la suma total de ingresos para el año en curso. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "ID de la sucursal para filtrar el resultado. Si se omite, se calcula el total de todas las sucursales."
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Total de ingresos del año."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KpiResponse'
+        '403':
+          description: "Acceso denegado."
+
+  /pagos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del pago a operar."
+        schema:
+          type: integer
+    get:
+      tags:
+        - Pagos
+      summary: "Obtener el detalle de un pago"
+      description: "Recupera los detalles de un pago específico. Accesible para roles: `RECEPTIONIST`, `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles del pago."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Pago no encontrado."
+
+  /pagos/{id}/anular:
+    patch:
+      tags:
+        - Pagos
+      summary: "Anular un pago"
+      description: "Marca un pago como ANULADO y revierte los montos correspondientes. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnularPagoRequest'
+      responses:
+        '204':
+          description: "Pago anulado con éxito."
+        '400':
+          description: "El pago ya ha sido anulado previamente."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Pago no encontrado."

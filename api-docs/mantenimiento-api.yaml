@@ -7,151 +7,12 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /mantenimientos:
-    get:
-      tags:
-        - Mantenimientos
-      summary: "Listar todos los mantenimientos"
-      description: "Obtiene una lista paginada de todos los mantenimientos, con filtro opcional por sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "Filtra los mantenimientos por la sucursal a la que pertenecen."
-          schema:
-            type: integer
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
-        - name: sort
-          in: query
-          schema:
-            type: string
-            default: "horaInicio,desc"
-      responses:
-        '200':
-          description: "Lista de mantenimientos obtenida con éxito."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/MantenimientoResponse'
-  /mantenimientos/{id}:
-    parameters:
-      - $ref: '#/components/parameters/MantenimientoId'
-    get:
-      tags:
-        - Mantenimientos
-      summary: "Obtener un mantenimiento por su ID"
-      responses:
-        '200':
-          description: "Detalles del mantenimiento."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MantenimientoResponse'
-        '404':
-          description: "Mantenimiento no encontrado."
-    put:
-      tags:
-        - Mantenimientos
-      summary: "Actualizar un mantenimiento"
-      description: "Actualiza los detalles de un mantenimiento programado."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMantenimientoRequest'
-      responses:
-        '200':
-          description: "Mantenimiento actualizado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MantenimientoResponse'
-        '400':
-          description: "No se puede modificar un mantenimiento en estado final."
-        '404':
-          description: "Mantenimiento no encontrado."
-
-  /mantenimientos/cancha/{canchaId}:
-    get:
-      tags:
-        - Mantenimientos
-      summary: "Listar mantenimientos por cancha"
-      parameters:
-        - name: canchaId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: "Lista de mantenimientos para la cancha especificada."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MantenimientoResponse'
-        '404':
-          description: "Cancha no encontrada."
-
-  /mantenimientos/{id}/estado:
-    patch:
-      tags:
-        - Mantenimientos
-      summary: "Actualizar el estado de un mantenimiento"
-      description: "Cambia el estado de un mantenimiento (ej. de PROGRAMADO a EN_PROCESO)."
-      parameters:
-        - $ref: '#/components/parameters/MantenimientoId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateEstadoMantenimientoRequest'
-      responses:
-        '200':
-          description: "Estado actualizado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MantenimientoResponse'
-        '404':
-          description: "Mantenimiento no encontrado."
-
-  /mantenimientos/{id}/cancelar:
-    patch:
-      tags:
-        - Mantenimientos
-      summary: "Cancelar un mantenimiento"
-      description: "Cambia el estado de un mantenimiento a CANCELADO."
-      parameters:
-        - $ref: '#/components/parameters/MantenimientoId'
-      responses:
-        '200':
-          description: "Mantenimiento cancelado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MantenimientoResponse'
-        '400':
-          description: "El mantenimiento ya está en un estado final."
-        '404':
-          description: "Mantenimiento no encontrado."
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     MantenimientoId:
       name: id
@@ -160,7 +21,6 @@ components:
       description: "ID del mantenimiento a operar."
       schema:
         type: integer
-
   schemas:
     TipoMantenimiento:
       type: string
@@ -204,3 +64,192 @@ components:
       required: [estado]
       properties:
         estado: { $ref: '#/components/schemas/EstadoMantenimiento' }
+
+paths:
+  /mantenimientos:
+    get:
+      tags:
+        - Mantenimientos
+      summary: "Listar todos los mantenimientos"
+      description: "Obtiene una lista paginada de todos los mantenimientos. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "Filtra los mantenimientos por la sucursal a la que pertenecen."
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "horaInicio,desc" }
+      responses:
+        '200':
+          description: "Lista de mantenimientos obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MantenimientoResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Mantenimientos
+      summary: "Crear un nuevo mantenimiento"
+      description: "Registra un nuevo mantenimiento para una cancha. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMantenimientoRequest'
+      responses:
+        '201':
+          description: "Mantenimiento creado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MantenimientoResponse'
+        '400':
+          description: "Datos inválidos o conflicto de horario."
+        '403':
+          description: "Acceso denegado."
+
+  /mantenimientos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MantenimientoId'
+    get:
+      tags:
+        - Mantenimientos
+      summary: "Obtener un mantenimiento por su ID"
+      description: "Recupera los detalles de un mantenimiento específico. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles del mantenimiento."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MantenimientoResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Mantenimiento no encontrado."
+    put:
+      tags:
+        - Mantenimientos
+      summary: "Actualizar un mantenimiento"
+      description: "Actualiza los detalles de un mantenimiento programado. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMantenimientoRequest'
+      responses:
+        '200':
+          description: "Mantenimiento actualizado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MantenimientoResponse'
+        '400':
+          description: "No se puede modificar un mantenimiento en estado final."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Mantenimiento no encontrado."
+
+  /mantenimientos/cancha/{canchaId}:
+    get:
+      tags:
+        - Mantenimientos
+      summary: "Listar mantenimientos por cancha"
+      description: "Obtiene una lista de todos los mantenimientos para una cancha específica. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: canchaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Lista de mantenimientos para la cancha especificada."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MantenimientoResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Cancha no encontrada."
+
+  /mantenimientos/{id}/estado:
+    patch:
+      tags:
+        - Mantenimientos
+      summary: "Actualizar el estado de un mantenimiento"
+      description: "Cambia el estado de un mantenimiento. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MantenimientoId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEstadoMantenimientoRequest'
+      responses:
+        '200':
+          description: "Estado actualizado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MantenimientoResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Mantenimiento no encontrado."
+
+  /mantenimientos/{id}/cancelar:
+    patch:
+      tags:
+        - Mantenimientos
+      summary: "Cancelar un mantenimiento"
+      description: "Cambia el estado de un mantenimiento a CANCELADO. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MantenimientoId'
+      responses:
+        '200':
+          description: "Mantenimiento cancelado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MantenimientoResponse'
+        '400':
+          description: "El mantenimiento ya está en un estado final."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Mantenimiento no encontrado."

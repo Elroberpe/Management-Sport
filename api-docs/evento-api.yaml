@@ -7,187 +7,12 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Servidor de desarrollo local
 
-paths:
-  /eventos:
-    get:
-      tags:
-        - Eventos
-      summary: "Listar todos los eventos"
-      description: "Obtiene una lista paginada de todos los eventos. Si el usuario es SUPERADMIN, puede filtrar por sucursalId. Si es ADMIN/RECEPCIONISTA, el backend filtra automáticamente por su sucursal."
-      parameters:
-        - name: sucursalId
-          in: query
-          description: "Opcional. ID de la sucursal para filtrar los eventos (solo tiene efecto si el usuario logueado es SUPERADMIN)."
-          schema:
-            type: integer
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 10
-        - name: sort
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: "Lista de eventos obtenida con éxito."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EventoResponse'
-    post:
-      tags:
-        - Eventos
-      summary: "Crear un nuevo evento"
-      description: "Crea un nuevo evento y orquesta la creación de todas las reservas asociadas para bloquear el calendario."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateEventoRequest'
-      responses:
-        '201':
-          description: "Evento creado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '400':
-          description: "Datos inválidos o conflicto de horario en alguna de las canchas solicitadas."
-
-  /eventos/{id}:
-    parameters:
-      - $ref: '#/components/parameters/EventoId'
-    get:
-      tags:
-        - Eventos
-      summary: "Obtener un evento por su ID"
-      responses:
-        '200':
-          description: "Detalles del evento."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '404':
-          description: "Evento no encontrado."
-    put:
-      tags:
-        - Eventos
-      summary: "Actualizar datos de un evento"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateEventoRequest'
-      responses:
-        '200':
-          description: "Evento actualizado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '400':
-          description: "No se puede modificar un evento en estado final."
-        '404':
-          description: "Evento no encontrado."
-
-  /eventos/{id}/pagos:
-    parameters:
-      - $ref: '#/components/parameters/EventoId'
-    post:
-      tags:
-        - Pagos
-      summary: "Añadir un pago a un evento"
-      description: "Registra un pago directamente asociado a un evento."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddPagoToEventoRequest'
-      responses:
-        '200':
-          description: "Pago registrado y evento actualizado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '400':
-          description: "El monto excede el saldo o el evento está cancelado."
-    get:
-      tags:
-        - Pagos
-      summary: "Obtener el historial de pagos de un evento"
-      description: "Devuelve una lista con todos los pagos (adelantos, cuotas, saldo final) realizados para este evento."
-      responses:
-        '200':
-          description: "Lista de pagos obtenida."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PagoResponse'
-
-  /eventos/{id}/cancelar:
-    parameters:
-      - $ref: '#/components/parameters/EventoId'
-    post:
-      tags:
-        - Eventos
-      summary: "Cancelar un evento"
-      description: "Cancela un evento y todas sus reservas asociadas. Permite registrar un monto de reembolso si aplica."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancelEventoRequest'
-      responses:
-        '200':
-          description: "Evento cancelado."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '400':
-          description: "El evento ya está en un estado final o el reembolso excede el monto pagado."
-
-  /eventos/{id}/reprogramar:
-    parameters:
-      - $ref: '#/components/parameters/EventoId'
-    post:
-      tags:
-        - Eventos
-      summary: "Reprogramar un evento"
-      description: "Mueve un evento a un nuevo conjunto de horarios. Valida la disponibilidad de todos los nuevos horarios antes de proceder."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReprogramarEventoRequest'
-      responses:
-        '200':
-          description: "Evento reprogramado con éxito."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EventoResponse'
-        '400':
-          description: "El nuevo horario no está disponible o el número de horarios no coincide."
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     EventoId:
       name: id
@@ -196,7 +21,6 @@ components:
       description: "ID del evento a operar."
       schema:
         type: integer
-
   schemas:
     TipoEvento:
       type: string
@@ -287,6 +111,26 @@ components:
           items:
             $ref: '#/components/schemas/CreateEventoRequest/properties/horarios/items'
 
+    SimulacionCancelacionResponse:
+      type: object
+      description: "Resultado de simular la cancelación de un evento, mostrando el impacto financiero."
+      properties:
+        montoTotalPagado:
+          type: number
+          format: double
+          description: "Monto total que el cliente ha pagado por el evento hasta la fecha."
+        penalidadAplicada:
+          type: number
+          format: double
+          description: "Monto de la penalidad que se aplicaría por la cancelación según las políticas."
+        montoAReembolsar:
+          type: number
+          format: double
+          description: "Monto final que se le devolvería al cliente."
+        mensaje:
+          type: string
+          description: "Un mensaje explicando el cálculo o la política aplicada."
+
     PagoResponse:
       type: object
       properties:
@@ -300,3 +144,234 @@ components:
         tipoTransaccion: { type: string }
         referencia: { type: string, nullable: true }
         nota: { type: string, nullable: true }
+
+paths:
+  /eventos:
+    get:
+      tags:
+        - Eventos
+      summary: "Listar todos los eventos"
+      description: "Obtiene una lista paginada de todos los eventos. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sucursalId
+          in: query
+          description: "Opcional. ID de la sucursal para filtrar los eventos (solo tiene efecto si el usuario logueado es SUPERADMIN)."
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 10 }
+        - name: sort
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: "Lista de eventos obtenida con éxito."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventoResponse'
+        '403':
+          description: "Acceso denegado."
+    post:
+      tags:
+        - Eventos
+      summary: "Crear un nuevo evento"
+      description: "Crea un nuevo evento y sus reservas asociadas. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventoRequest'
+      responses:
+        '201':
+          description: "Evento creado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '400':
+          description: "Datos inválidos o conflicto de horario."
+        '403':
+          description: "Acceso denegado."
+
+  /eventos/{id}:
+    parameters:
+      - $ref: '#/components/parameters/EventoId'
+    get:
+      tags:
+        - Eventos
+      summary: "Obtener un evento por su ID"
+      description: "Recupera los detalles de un evento específico. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Detalles del evento."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Evento no encontrado."
+    put:
+      tags:
+        - Eventos
+      summary: "Actualizar datos de un evento"
+      description: "Actualiza los datos de un evento. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventoRequest'
+      responses:
+        '200':
+          description: "Evento actualizado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '400':
+          description: "No se puede modificar un evento en estado final."
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Evento no encontrado."
+
+  /eventos/{id}/simular-cancelacion:
+    parameters:
+      - $ref: '#/components/parameters/EventoId'
+    get:
+      tags:
+        - Eventos
+      summary: "Simular la cancelación de un evento"
+      description: "Calcula y devuelve el impacto financiero de cancelar un evento, sin realizar la cancelación. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Simulación de cancelación exitosa."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulacionCancelacionResponse'
+        '403':
+          description: "Acceso denegado."
+        '404':
+          description: "Evento no encontrado."
+
+  /eventos/{id}/pagos:
+    parameters:
+      - $ref: '#/components/parameters/EventoId'
+    post:
+      tags:
+        - Pagos
+      summary: "Añadir un pago a un evento"
+      description: "Registra un pago directamente asociado a un evento. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPagoToEventoRequest'
+      responses:
+        '200':
+          description: "Pago registrado y evento actualizado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '400':
+          description: "El monto excede el saldo o el evento está cancelado."
+        '403':
+          description: "Acceso denegado."
+    get:
+      tags:
+        - Pagos
+      summary: "Obtener el historial de pagos de un evento"
+      description: "Devuelve una lista con todos los pagos realizados para este evento. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Lista de pagos obtenida."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PagoResponse'
+        '403':
+          description: "Acceso denegado."
+
+  /eventos/{id}/cancelar:
+    parameters:
+      - $ref: '#/components/parameters/EventoId'
+    post:
+      tags:
+        - Eventos
+      summary: "Cancelar un evento"
+      description: "Cancela un evento y todas sus reservas asociadas. Accesible para roles: `ADMIN`, `SUPERADMIN`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelEventoRequest'
+      responses:
+        '200':
+          description: "Evento cancelado."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '400':
+          description: "El evento ya está en un estado final o el reembolso excede el monto pagado."
+        '403':
+          description: "Acceso denegado."
+
+  /eventos/{id}/reprogramar:
+    parameters:
+      - $ref: '#/components/parameters/EventoId'
+    post:
+      tags:
+        - Eventos
+      summary: "Reprogramar un evento"
+      description: "Mueve un evento a un nuevo conjunto de horarios. Accesible para roles: `ADMIN`, `SUPERADMIN`, `RECEPCIONISTA`."
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReprogramarEventoRequest'
+      responses:
+        '200':
+          description: "Evento reprogramado con éxito."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoResponse'
+        '400':
+          description: "El nuevo horario no está disponible o el número de horarios no coincide."
+        '403':
+          description: "Acceso denegado."
